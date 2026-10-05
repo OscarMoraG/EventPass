@@ -1,0 +1,1 @@
+console.log("EventPass iniciado correctamente");
