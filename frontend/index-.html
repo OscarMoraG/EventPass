@@ -3,55 +3,248 @@
 
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>EventPass</title>
+    <title>EventPass | Vive el evento</title>
 
     <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body>
 
-    <header>
-        <h1>EventPass</h1>
+    <!-- NAVBAR -->
+    <header class="navbar">
+
+        <div class="logo">
+            <span class="logo-icon">E</span>
+            <span>EventPass</span>
+        </div>
 
         <nav>
-            <a href="#">Inicio</a>
-            <a href="#">Eventos</a>
-            <a href="#">Iniciar sesión</a>
-            <a href="#">Registrarse</a>
+            <a href="#inicio">Inicio</a>
+            <a href="#eventos">Eventos</a>
+            <a href="#nosotros">Nosotros</a>
         </nav>
+
+        <div class="nav-buttons">
+            <button class="btn btn-outline">Iniciar sesión</button>
+            <button class="btn btn-primary">Registrarse</button>
+        </div>
+
     </header>
 
+
+    <!-- HERO -->
     <main>
 
-        <section>
-            <h2>Descubre tu próximo evento</h2>
+        <section id="inicio" class="hero">
 
-            <p>
-                Encuentra eventos, conoce nuevas experiencias
-                y asegura tu lugar.
-            </p>
+            <div class="hero-content">
 
-            <button>
-                Ver eventos
-            </button>
+                <span class="badge">
+                    ✦ EXPERIENCIAS QUE CONECTAN
+                </span>
+
+                <h1>
+                    Vive el evento.<br>
+                    <span>Conecta con más.</span>
+                </h1>
+
+                <p>
+                    Descubre eventos increíbles, reserva tu lugar
+                    y vive experiencias que recordarás.
+                </p>
+
+                <div class="hero-buttons">
+                    <a href="#eventos" class="btn btn-primary btn-large">
+                        Explorar eventos
+                    </a>
+
+                    <button class="btn btn-outline btn-large">
+                        Crear cuenta
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="hero-card">
+
+                <div class="hero-card-top">
+                    <span>PRÓXIMO EVENTO</span>
+                    <span class="status">● DISPONIBLE</span>
+                </div>
+
+                <div class="hero-event-image">
+                    <span>EVENTPASS</span>
+                </div>
+
+                <div class="hero-event-info">
+
+                    <span class="category">TECNOLOGÍA</span>
+
+                    <h3>
+                        Festival de Tecnología
+                    </h3>
+
+                    <p>
+                        📍 Bucaramanga
+                    </p>
+
+                    <div class="event-date">
+                        <strong>07</strong>
+                        <span>
+                            OCT<br>
+                            2026
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
         </section>
 
-        <section>
-            <h2>Eventos destacados</h2>
 
-            <div id="eventos-container">
-                <!-- Aquí aparecerán los eventos -->
+        <!-- EVENTOS -->
+        <section id="eventos" class="events-section">
+
+            <div class="section-heading">
+
+                <div>
+                    <span class="section-label">
+                        DESCUBRE
+                    </span>
+
+                    <h2>
+                        Eventos destacados
+                    </h2>
+
+                    <p>
+                        Encuentra tu próxima experiencia.
+                    </p>
+                </div>
+
+                <button class="btn btn-outline">
+                    Ver todos
+                </button>
+
             </div>
+
+
+            <div class="filters">
+
+                <button class="filter active">
+                    Todos
+                </button>
+
+                <button class="filter">
+                    Tecnología
+                </button>
+
+                <button class="filter">
+                    Música
+                </button>
+
+                <button class="filter">
+                    Deportes
+                </button>
+
+                <button class="filter">
+                    Cultura
+                </button>
+
+            </div>
+
+
+            <div id="eventos-container" class="events-grid">
+
+                <!-- Los eventos de n8n aparecerán aquí -->
+
+            </div>
+
+        </section>
+
+
+        <!-- CARACTERÍSTICAS -->
+        <section id="nosotros" class="features-section">
+
+            <span class="section-label">
+                EVENTPASS
+            </span>
+
+            <h2>
+                Todo lo que necesitas para<br>
+                vivir mejores experiencias.
+            </h2>
+
+            <div class="features-grid">
+
+                <article class="feature-card">
+                    <div class="feature-icon">◈</div>
+
+                    <h3>
+                        Descubre
+                    </h3>
+
+                    <p>
+                        Explora eventos y encuentra
+                        experiencias que se adapten a ti.
+                    </p>
+                </article>
+
+
+                <article class="feature-card">
+                    <div class="feature-icon">✓</div>
+
+                    <h3>
+                        Inscríbete
+                    </h3>
+
+                    <p>
+                        Asegura tu lugar de forma rápida
+                        y sencilla.
+                    </p>
+                </article>
+
+
+                <article class="feature-card">
+                    <div class="feature-icon">★</div>
+
+                    <h3>
+                        Disfruta
+                    </h3>
+
+                    <p>
+                        Recibe recordatorios y notificaciones
+                        importantes sobre tus eventos.
+                    </p>
+                </article>
+
+            </div>
+
         </section>
 
     </main>
 
+
+    <!-- FOOTER -->
     <footer>
-        <p>EventPass © 2026</p>
+
+        <div class="footer-logo">
+            <span class="logo-icon">E</span>
+            <strong>EventPass</strong>
+        </div>
+
+        <p>
+            Tu próxima experiencia comienza aquí.
+        </p>
+
+        <p class="copyright">
+            © 2026 EventPass. Todos los derechos reservados.
+        </p>
+
     </footer>
+
 
     <script src="js/app.js"></script>
 
