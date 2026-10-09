@@ -1,0 +1,758 @@
+{
+  "name": "WF06_inscripciones",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inscripciones",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -208,
+        -384
+      ],
+      "id": "3c9865b7-3f7c-4faf-95b5-b1e02aa889c9",
+      "name": "WF06 - Inscripciones",
+      "webhookId": "0eeefd56-497e-41e7-b1dd-112f8a64fe30"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\n\nconst usuario_id = String(body.usuario_id || '').trim();\nconst evento_id = String(body.evento_id || '').trim();\nconst sesion_id = String(body.sesion_id || '').trim();\n\nif (!usuario_id) {\n  throw new Error('usuario_id es obligatorio');\n}\n\nif (!evento_id) {\n  throw new Error('evento_id es obligatorio');\n}\n\nconst inscripcion_id =\n  'INS-' +\n  Date.now() +\n  '-' +\n  Math.random().toString(36).substring(2, 8);\n\nconst fecha = new Date().toISOString();\n\nreturn [{\n  json: {\n    inscripcion_id,\n    usuario_id,\n    evento_id,\n    sesion_id,\n    fecha_inscripcion: fecha,\n    fecha_actualizacion: fecha,\n    nombre_acreditacion: body.nombre_acreditacion || '',\n    observaciones: body.observaciones || '',\n    origen: body.origen || 'WEB',\n    orden_espera: ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -384
+      ],
+      "id": "85340b4e-cea3-4201-9d21-b528a378a4f9",
+      "name": "WF06 - Preparar inscripción"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg",
+          "mode": "list",
+          "cachedResultName": "EP04_Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "evento_id",
+              "lookupValue": "={{ $('WF06 - Preparar inscripción').first().json.evento_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -192,
+        -176
+      ],
+      "id": "a1641609-7b43-4062-b1c3-b07cd8ffd3e7",
+      "name": "WF06 - Consultar evento",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k",
+          "mode": "list",
+          "cachedResultName": "EP06_Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "usuario_id",
+              "lookupValue": "={{ $('WF06 - Preparar inscripción').first().json.usuario_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        288,
+        -192
+      ],
+      "id": "ce2f642c-d0e3-44c1-a852-268ec03f6b6b",
+      "name": "WF06 - Consultar inscripciones",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k",
+          "mode": "list",
+          "cachedResultName": "EP06_Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        -192
+      ],
+      "id": "0235438e-21aa-47e6-9d89-f227b3541b74",
+      "name": "WF06 - Todas las inscripciones",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const evento = $('WF06 - Consultar evento').first().json;\nconst nueva = $('WF06 - Preparar inscripción').first().json;\nconst inscripciones = $('WF06 - Todas las inscripciones').all();\n\nconst evento_id = nueva.evento_id;\nconst usuario_id = nueva.usuario_id;\n\n// Validar que el evento exista\nif (!evento.evento_id) {\n  throw new Error('El evento no existe');\n}\n\n// Validar que esté publicado\nif (String(evento.estado).toUpperCase() !== 'PUBLICADO') {\n  throw new Error('El evento no está disponible para inscripción');\n}\n\n// Capacidad\nconst capacidad = Number(evento.capacidad || 0);\n\nif (capacidad <= 0) {\n  throw new Error('El evento no tiene una capacidad válida');\n}\n\n// Inscripciones del mismo evento\nconst inscripcionesEvento = inscripciones.filter(item =>\n  String(item.json.evento_id || '') === evento_id\n);\n\n// Confirmadas\nconst confirmadas = inscripcionesEvento.filter(item =>\n  String(item.json.estado || '').toUpperCase() === 'CONFIRMADA'\n);\n\n// Lista de espera\nconst listaEspera = inscripcionesEvento.filter(item =>\n  String(item.json.estado || '').toUpperCase() === 'LISTA_ESPERA'\n);\n\n// Validar inscripción duplicada activa\nconst duplicada = inscripcionesEvento.find(item =>\n  String(item.json.usuario_id || '') === usuario_id &&\n  ['CONFIRMADA', 'LISTA_ESPERA'].includes(\n    String(item.json.estado || '').toUpperCase()\n  )\n);\n\nif (duplicada) {\n  throw new Error('El usuario ya tiene una inscripción activa en este evento');\n}\n\n// Determinar estado\nlet estado;\nlet orden_espera = '';\n\nif (confirmadas.length < capacidad) {\n  estado = 'CONFIRMADA';\n} else {\n  estado = 'LISTA_ESPERA';\n  orden_espera = listaEspera.length + 1;\n}\n\nreturn [\n  {\n    json: {\n      ...nueva,\n      estado,\n      orden_espera,\n      capacidad,\n      confirmadas_actuales: confirmadas.length,\n      cupos_disponibles: Math.max(capacidad - confirmadas.length, 0)\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        32
+      ],
+      "id": "1aff0840-d417-4d54-8729-3b2d2c94ac25",
+      "name": "WF06 - Validar evento y cupo"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k",
+          "mode": "list",
+          "cachedResultName": "EP06_Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "inscripcion_id": "={{ $json.inscripcion_id }}",
+            "usuario_id": "={{ $json.usuario_id }}",
+            "evento_id": "={{ $json.evento_id }}",
+            "estado": "={{ $json.estado }}",
+            "fecha_inscripcion": "={{ $json.fecha_inscripcion }}",
+            "fecha_actualizacion": "={{ $json.fecha_actualizacion }}",
+            "nombre_acreditacion": "={{ $json.nombre_acreditacion }}",
+            "observaciones": "={{ $json.observaciones }}",
+            "origen": "={{ $json.origen }}",
+            "orden_espera": "={{ $json.orden_espera }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "inscripcion_id",
+              "displayName": "inscripcion_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "evento_id",
+              "displayName": "evento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_inscripcion",
+              "displayName": "fecha_inscripcion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_actualizacion",
+              "displayName": "fecha_actualizacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_acreditacion",
+              "displayName": "nombre_acreditacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "origen",
+              "displayName": "origen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "orden_espera",
+              "displayName": "orden_espera",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        16,
+        32
+      ],
+      "id": "358a40e0-7b9b-4a18-a963-46de9e4a1172",
+      "name": "WF06 - Validar evento y cupo1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inscripcion = $input.first().json;\n\nreturn [\n  {\n    json: {\n      ok: true,\n      mensaje:\n        inscripcion.estado === 'CONFIRMADA'\n          ? 'Inscripción confirmada correctamente'\n          : 'Evento lleno. Usuario agregado a la lista de espera',\n      inscripcion: {\n        inscripcion_id: inscripcion.inscripcion_id,\n        usuario_id: inscripcion.usuario_id,\n        evento_id: inscripcion.evento_id,\n        estado: inscripcion.estado,\n        orden_espera: inscripcion.orden_espera\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        32
+      ],
+      "id": "09cc629c-3dc1-41b3-8680-4bb719a71f41",
+      "name": "WF06 - Respuesta"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA",
+          "mode": "list",
+          "cachedResultName": "EP02_Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "sesion_id ",
+              "lookupValue": "={{ $json.sesion_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        192,
+        -384
+      ],
+      "id": "5e3f349c-e4f1-4859-b5db-fe5a38426fee",
+      "name": "WF06 - Consultar sesión",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f8b2f265-f6e1-4a69-a40d-436acb185636",
+              "leftValue": "={{ String($json.estado || '').toUpperCase() === 'ACTIVA' && new Date($json.fecha_expiracion).getTime() > Date.now() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        -384
+      ],
+      "id": "6eee9909-fa9d-40a9-8940-597c2bd84f2e",
+      "name": "WF06 - Validar sesión"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "781f5a01-2bb3-42eb-bfdc-0ea1674b203d",
+              "leftValue": "={{ String($json.estado || '').toUpperCase() === 'PUBLICADO' && Number($json.capacidad || 0) > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        32,
+        -176
+      ],
+      "id": "950c3970-4de0-4459-9071-2d2858328548",
+      "name": "WF06 - Validar evento"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inscripciones = $input.all();\n\nconst preparacion = $('WF06 - Preparar inscripción').first().json;\n\nconst usuario_id = String(preparacion.usuario_id || '').trim();\nconst evento_id = String(preparacion.evento_id || '').trim();\n\nconst inscripcionActiva = inscripciones.some(item => {\n  const data = item.json;\n\n  return (\n    String(data.usuario_id || '').trim() === usuario_id &&\n    String(data.evento_id || '').trim() === evento_id &&\n    ['CONFIRMADA', 'LISTA_ESPERA'].includes(\n      String(data.estado || '').toUpperCase()\n    )\n  );\n});\n\nreturn [{\n  json: {\n    ...preparacion,\n    inscripcion_activa: inscripcionActiva\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -192
+      ],
+      "id": "37ac2f49-deb4-44ae-9a2d-cfd6873e2253",
+      "name": "WF06 - Validar duplicado"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "17811348-bbd4-4bd9-9c24-22e57d579d07",
+              "leftValue": "={{ $json.inscripcion_activa }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        -192
+      ],
+      "id": "6102cfb9-8863-434f-93e1-b1431dbc445d",
+      "name": "WF06 - IF inscripción activa"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Zv1yTMsPMob4N0BJ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Zv1yTMsPMob4N0BJ",
+          "cachedResultName": "WF09_notificaciones"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        432,
+        32
+      ],
+      "id": "5ccf956b-b00f-4f8c-a6f4-12ea2ebe5523",
+      "name": "WF06 - Enviar notificación"
+    },
+    {
+      "parameters": {
+        "jsCode": "const datos = $input.first().json;\n\nconst estado = String(datos.estado || '').toUpperCase();\n\nlet tipo;\nlet titulo;\nlet mensaje;\n\nif (estado === 'CONFIRMADA') {\n  tipo = 'INSCRIPCION_CONFIRMADA';\n  titulo = 'Inscripción confirmada';\n  mensaje = 'Tu inscripción al evento fue confirmada correctamente.';\n} else if (estado === 'LISTA_ESPERA') {\n  tipo = 'LISTA_ESPERA';\n  titulo = 'Ingreso a lista de espera';\n  mensaje = 'El evento está lleno. Has sido agregado a la lista de espera.';\n} else {\n  tipo = 'INSCRIPCION';\n  titulo = 'Actualización de inscripción';\n  mensaje = 'Tu inscripción ha sido procesada.';\n}\n\nreturn [{\n  json: {\n    ...datos,\n    tipo,\n    titulo,\n    mensaje\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        32
+      ],
+      "id": "c1741f69-17af-4754-9487-b3cffad59445",
+      "name": "WF06 - Preparar notificación"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        832,
+        32
+      ],
+      "id": "fe50b51f-afcf-4566-bac6-19029c746c86",
+      "name": "WF06 - Responder HTTP"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    ok: false,\n    mensaje: 'El usuario ya tiene una inscripción activa en este evento.',\n    error: 'INSCRIPCION_DUPLICADA'\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        -208
+      ],
+      "id": "55b95801-8175-4dc9-a627-2a7fb7d31469",
+      "name": "WF06 - Respuesta duplicada"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1152,
+        -208
+      ],
+      "id": "2f554b0a-5970-4702-814b-69aade13f3ca",
+      "name": "WF06 - Responder HTTP duplicado"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WF06 - Inscripciones": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Preparar inscripción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Preparar inscripción": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Consultar sesión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Consultar evento": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Validar evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Consultar inscripciones": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Todas las inscripciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Todas las inscripciones": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Validar duplicado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Validar evento y cupo": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Validar evento y cupo1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Validar evento y cupo1": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Preparar notificación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Consultar sesión": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Validar sesión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Validar sesión": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Consultar evento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "WF06 - Validar evento": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Consultar inscripciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Validar duplicado": {
+      "main": [
+        [
+          {
+            "node": "WF06 - IF inscripción activa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - IF inscripción activa": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Respuesta duplicada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF06 - Validar evento y cupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Enviar notificación": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Preparar notificación": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Enviar notificación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Respuesta": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Responder HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Respuesta duplicada": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Responder HTTP duplicado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "943b6bc5-1b59-4406-9f31-39fc4f9b725f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f12b4595a98f03ae4f4054776b13cc8451494c0fa3725f32981f734d7b5a24e7"
+  },
+  "nodeGroups": [],
+  "id": "lJ3PfuNbk2Y3W46E",
+  "tags": []
+}

@@ -1,0 +1,518 @@
+{
+  "name": "WF10_eventpass_assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3f1b8293-2fdc-4a5d-9639-1387b2ab8d57",
+      "name": "When chat message received",
+      "webhookId": "7f202a16-41dd-4041-b7e7-e05c0875f937"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Eres el asistente conversacional de EventPass.\n\nTu función es brindar soporte informativo sobre:\n- eventos\n- categorías\n- fechas\n- horarios\n- lugares\n- disponibilidad\n- lista de espera\n- funcionamiento de EventPass\n- vinculación de Telegram\n- estados de inscripción\n\nRESTRICCIONES IMPORTANTES:\n\nEste asistente es únicamente informativo.\n\nNO puedes:\n- crear usuarios\n- iniciar sesión\n- cerrar sesión\n- crear inscripciones\n- cancelar inscripciones\n- modificar eventos\n- cambiar capacidades o cupos\n- modificar estados de negocio\n- realizar acciones administrativas\n- modificar información en Google Sheets\n\nSolo puedes consultar y explicar información disponible.\n\nSi el usuario solicita realizar una acción que implique modificar datos o ejecutar una operación de negocio, debes indicar que esa acción debe realizarse mediante las funciones correspondientes de EventPass y que tú solamente puedes brindar información.\n\nResponde siempre de forma clara, amable y breve.\nNo inventes información sobre eventos. Si un dato no está disponible, indícalo claramente."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "8792ae2b-2a52-43ef-8674-abb2e1c11230",
+      "name": "WF10 - Agente IA"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.6-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        160,
+        192
+      ],
+      "id": "e492f043-3ed1-490e-b73c-3d260b710663",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6D7TSo6qiloJqte4",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg",
+          "mode": "list",
+          "cachedResultName": "EP04_Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        432,
+        192
+      ],
+      "id": "b2c1c8e1-1a38-4601-9ef1-d9925f7f4ef1",
+      "name": "WF10 - Consultar eventos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        304,
+        192
+      ],
+      "id": "960a19a8-3f6f-4f2b-9649-5f92dd6d3b03",
+      "name": "WF10 - Memoria conversación"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1k9wp8FEp09rWS6V760HtRU-ei782QyOEmXiBeYH-tpo",
+          "mode": "list",
+          "cachedResultName": "EP10_soporte",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k9wp8FEp09rWS6V760HtRU-ei782QyOEmXiBeYH-tpo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1558361738,
+          "mode": "list",
+          "cachedResultName": "Conversaciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k9wp8FEp09rWS6V760HtRU-ei782QyOEmXiBeYH-tpo/edit#gid=1558361738"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "conversation_id": "={{ $('When chat message received').item.json.sessionId }}",
+            "visitor_id": "={{ $('When chat message received').item.json.sessionId }}",
+            "fecha_inicio": "={{ new Date().toISOString() }}",
+            "fecha_ultima_interaccion": "={{ new Date().toISOString() }}",
+            "estado": "ABIERTA"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "visitor_id",
+              "displayName": "visitor_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_inicio",
+              "displayName": "fecha_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_ultima_interaccion",
+              "displayName": "fecha_ultima_interaccion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        720,
+        160
+      ],
+      "id": "39c50f54-6a2b-457e-94c5-c8fd98c74051",
+      "name": "EP10 - Guardar conversación",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1k9wp8FEp09rWS6V760HtRU-ei782QyOEmXiBeYH-tpo",
+          "mode": "list",
+          "cachedResultName": "EP10_soporte",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k9wp8FEp09rWS6V760HtRU-ei782QyOEmXiBeYH-tpo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1915914681,
+          "mode": "list",
+          "cachedResultName": "Mensajes",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k9wp8FEp09rWS6V760HtRU-ei782QyOEmXiBeYH-tpo/edit#gid=1915914681"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message_id": "={{ 'MSG-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8) }}",
+            "conversation_id": "={{ $('When chat message received').item.json.sessionId }}",
+            "visitor_id": "={{ $('When chat message received').item.json.sessionId }}",
+            "rol": "USER",
+            "mensaje": "={{ $('When chat message received').item.json.chatInput }}",
+            "timestamp": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message_id",
+              "displayName": "message_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "visitor_id",
+              "displayName": "visitor_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rol",
+              "displayName": "rol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensaje",
+              "displayName": "mensaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        704,
+        -32
+      ],
+      "id": "fdadab7b-dab9-4e09-9732-b394b513cf88",
+      "name": "EP10 - Guardar mensaje usuario",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1k9wp8FEp09rWS6V760HtRU-ei782QyOEmXiBeYH-tpo",
+          "mode": "list",
+          "cachedResultName": "EP10_soporte",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k9wp8FEp09rWS6V760HtRU-ei782QyOEmXiBeYH-tpo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1915914681,
+          "mode": "list",
+          "cachedResultName": "Mensajes",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1k9wp8FEp09rWS6V760HtRU-ei782QyOEmXiBeYH-tpo/edit#gid=1915914681"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message_id": "={{ 'MSG-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8) }}",
+            "conversation_id": "={{ $('When chat message received').item.json.sessionId }}",
+            "visitor_id": "={{ $('When chat message received').item.json.sessionId }}",
+            "rol": "ASSISTANT",
+            "timestamp": "={{ new Date().toISOString() }}",
+            "mensaje": "={{ $('WF10 - Agente IA').item.json.output }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message_id",
+              "displayName": "message_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "visitor_id",
+              "displayName": "visitor_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rol",
+              "displayName": "rol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mensaje",
+              "displayName": "mensaje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        688,
+        -192
+      ],
+      "id": "e20c0372-1aca-4756-9a3a-010f41f6d5dc",
+      "name": "EP10 - Guardar mensaje asistente",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "WF10 - Agente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "WF10 - Agente IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF10 - Consultar eventos": {
+      "ai_tool": [
+        [
+          {
+            "node": "WF10 - Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF10 - Memoria conversación": {
+      "ai_memory": [
+        [
+          {
+            "node": "WF10 - Agente IA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF10 - Agente IA": {
+      "main": [
+        [
+          {
+            "node": "EP10 - Guardar mensaje asistente",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "EP10 - Guardar mensaje usuario",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "EP10 - Guardar conversación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EP10 - Guardar mensaje usuario": {
+      "main": [
+        []
+      ]
+    },
+    "EP10 - Guardar mensaje asistente": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "354180eb-d100-4a31-b756-2ed569e5f82b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f12b4595a98f03ae4f4054776b13cc8451494c0fa3725f32981f734d7b5a24e7"
+  },
+  "nodeGroups": [],
+  "id": "dg0bmd8uhvWLjBEE",
+  "tags": []
+}

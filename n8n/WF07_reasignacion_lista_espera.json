@@ -1,0 +1,542 @@
+{
+  "name": "WF07_reasignacion_lista_espera",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg",
+          "mode": "list",
+          "cachedResultName": "EP04_Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -448,
+        -304
+      ],
+      "id": "e7353aba-4b8d-41c7-9d5c-a16aeda8828f",
+      "name": "WF07 - Consultar eventos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k",
+          "mode": "list",
+          "cachedResultName": "EP06_Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -272,
+        -304
+      ],
+      "id": "61bd6171-e945-4ff2-b4b4-bdc2fb769430",
+      "name": "WF07 - Consultar inscripciones",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const eventos = $('WF07 - Consultar eventos').all();\nconst inscripciones = $input.all();\n\nconst reasignaciones = [];\n\nfor (const eventoItem of eventos) {\n  const evento = eventoItem.json;\n\n  const eventoId = String(evento.evento_id || '');\n\n  if (!eventoId) {\n    continue;\n  }\n\n  // No reasignar eventos cancelados o cerrados\n  const estadoEvento = String(evento.estado || '').toUpperCase();\n\n  if (['CANCELADO', 'CERRADO'].includes(estadoEvento)) {\n    continue;\n  }\n\n  const capacidad = Number(evento.capacidad || 0);\n\n  // Inscripciones pertenecientes a este evento\n  const inscripcionesEvento = inscripciones.filter(item =>\n    String(item.json.evento_id || '') === eventoId\n  );\n\n  // Personas actualmente confirmadas\n  const confirmadas = inscripcionesEvento.filter(item =>\n    String(item.json.estado || '').toUpperCase() === 'CONFIRMADA'\n  );\n\n  // Personas en lista de espera\n  const espera = inscripcionesEvento\n    .filter(item =>\n      String(item.json.estado || '').toUpperCase() === 'LISTA_ESPERA'\n    )\n    .sort((a, b) => {\n      const fechaA = new Date(a.json.fecha_inscripcion || 0);\n      const fechaB = new Date(b.json.fecha_inscripcion || 0);\n\n      return fechaA - fechaB;\n    });\n\n  // Cupos disponibles\n  const cuposDisponibles = Math.max(\n    capacidad - confirmadas.length,\n    0\n  );\n\n  // Seleccionar únicamente los primeros usuarios de la lista\n  const candidatos = espera.slice(0, cuposDisponibles);\n\n  candidatos.forEach((item, index) => {\n    reasignaciones.push({\n      json: {\n        ...item.json,\n\n        estado_anterior: 'LISTA_ESPERA',\n        estado_nuevo: 'CONFIRMADA',\n\n        orden_lista: index + 1,\n\n        fecha_reasignacion: new Date().toISOString(),\n\n        evento_nombre: evento.nombre,\n\n        cupos_disponibles: cuposDisponibles\n      }\n    });\n  });\n}\n\nreturn reasignaciones;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        -96
+      ],
+      "id": "3817ae51-56e6-4769-8857-457bb56b6650",
+      "name": "WF07 - Calcular reasignaciones"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -656,
+        -304
+      ],
+      "id": "de598ff4-23c7-4c3c-b380-7dbe334e9f3d",
+      "name": "WF07 - Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1-oyKnAhmvcDUF8AM89qc-uWYuZdCD4sEa9yt2GEHcac",
+          "mode": "list",
+          "cachedResultName": "EP07_Reasignaciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1-oyKnAhmvcDUF8AM89qc-uWYuZdCD4sEa9yt2GEHcac/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Reasignaciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1-oyKnAhmvcDUF8AM89qc-uWYuZdCD4sEa9yt2GEHcac/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "reasignacion_id": "={{ $('WF07 - Preparar registro de reasignación').first().json.reasignacion_id }}",
+            "evento_id": "={{ $('WF07 - Preparar registro de reasignación').first().json.evento_id }}",
+            "inscripcion_id": "={{ $('WF07 - Preparar registro de reasignación').first().json.inscripcion_id }}",
+            "usuario_id": "={{ $('WF07 - Preparar registro de reasignación').first().json.reasignacion_id }}",
+            "fecha": "={{ $('WF07 - Preparar registro de reasignación').first().json.fecha }}",
+            "orden_lista": "={{ $('WF07 - Preparar registro de reasignación').first().json.orden_lista }}",
+            "estado_anterior": "={{ $('WF07 - Preparar registro de reasignación').first().json.estado_anterior }}",
+            "estado_nuevo": "={{ $('WF07 - Preparar registro de reasignación').first().json.estado_nuevo }}",
+            "resultado_notificacion": "={{ $('WF07 - Preparar registro de reasignación').first().json.resultado_notificacion }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "reasignacion_id",
+              "displayName": "reasignacion_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "evento_id",
+              "displayName": "evento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inscripcion_id",
+              "displayName": "inscripcion_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "orden_lista",
+              "displayName": "orden_lista",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado_anterior",
+              "displayName": "estado_anterior",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado_nuevo",
+              "displayName": "estado_nuevo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resultado_notificacion",
+              "displayName": "resultado_notificacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -448,
+        112
+      ],
+      "id": "46dc4a1b-1869-418c-90af-f9c55b08daea",
+      "name": "WF07 - Registrar reasignación",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k",
+          "mode": "list",
+          "cachedResultName": "EP06_Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "inscripcion_id",
+              "lookupValue": "={{ $json.inscripcion_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -448,
+        -96
+      ],
+      "id": "6bc846f7-4ba1-459e-b6a1-2dbb3a076f25",
+      "name": "WF07 - Buscar inscripción",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k",
+          "mode": "list",
+          "cachedResultName": "EP06_Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "inscripcion_id": "={{ $json.inscripcion_id }}",
+            "estado": "CONFIRMADA",
+            "fecha_actualizacion": "={{ new Date().toISOString() }}",
+            "usuario_id": "={{ $json.usuario_id }}",
+            "evento_id": "={{ $json.evento_id }}",
+            "fecha_inscripcion": "={{ $json.fecha_inscripcion }}",
+            "nombre_acreditacion": "={{ $json.nombre_acreditacion }}",
+            "observaciones": "={{ $json.observaciones }}",
+            "origen": "={{ $json.origen }}",
+            "orden_espera": "={{ $json.orden_espera }}"
+          },
+          "matchingColumns": [
+            "inscripcion_id"
+          ],
+          "schema": [
+            {
+              "id": "inscripcion_id",
+              "displayName": "inscripcion_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "evento_id",
+              "displayName": "evento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_inscripcion",
+              "displayName": "fecha_inscripcion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_actualizacion",
+              "displayName": "fecha_actualizacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre_acreditacion",
+              "displayName": "nombre_acreditacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "origen",
+              "displayName": "origen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "orden_espera",
+              "displayName": "orden_espera",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -640,
+        112
+      ],
+      "id": "09dac743-5f71-47f3-8e34-e78fc74a93c7",
+      "name": "WF07 - Actualizar inscripción",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const encontrado = $input.first().json;\nconst calculado = $('WF07 - Calcular reasignaciones').all()[$itemIndex].json;\n\nreturn [\n  {\n    json: {\n      ...encontrado,\n\n      reasignacion_id:\n        'REA-' +\n        Date.now() +\n        '-' +\n        Math.random().toString(36).substring(2, 8),\n\n      evento_id: calculado.evento_id,\n      inscripcion_id: calculado.inscripcion_id,\n      usuario_id: calculado.usuario_id,\n      fecha: calculado.fecha_reasignacion,\n      orden_lista: calculado.orden_lista,\n      estado_anterior: calculado.estado_anterior,\n      estado_nuevo: calculado.estado_nuevo,\n      resultado_notificacion: 'PENDIENTE'\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -96
+      ],
+      "id": "4c827e9f-fa5b-43a4-87cd-c3193d5fa044",
+      "name": "WF07 - Preparar registro de reasignación"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WF07 - Consultar eventos": {
+      "main": [
+        [
+          {
+            "node": "WF07 - Consultar inscripciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF07 - Consultar inscripciones": {
+      "main": [
+        [
+          {
+            "node": "WF07 - Calcular reasignaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF07 - Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "WF07 - Consultar eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF07 - Calcular reasignaciones": {
+      "main": [
+        [
+          {
+            "node": "WF07 - Buscar inscripción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF07 - Buscar inscripción": {
+      "main": [
+        [
+          {
+            "node": "WF07 - Preparar registro de reasignación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF07 - Actualizar inscripción": {
+      "main": [
+        [
+          {
+            "node": "WF07 - Registrar reasignación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF07 - Preparar registro de reasignación": {
+      "main": [
+        [
+          {
+            "node": "WF07 - Actualizar inscripción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "beef12be-c995-40e4-9c1a-68f5f619972e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f12b4595a98f03ae4f4054776b13cc8451494c0fa3725f32981f734d7b5a24e7"
+  },
+  "nodeGroups": [],
+  "id": "DGoQeaSlzFF55K8H",
+  "tags": []
+}

@@ -1,0 +1,186 @@
+{
+  "name": "WF03 - Vincular Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "telegram",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f5ce5f69-4a0c-42b9-939a-824c4b447421",
+      "name": "WF03_telegram",
+      "webhookId": "d79d1133-10c4-439a-ac74-853e75f814cc"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Datos recibidos desde el Webhook\nconst body = $input.first().json.body;\n\n// Usuario que solicita la vinculación\nconst usuario_id = String(body.usuario_id || '').trim();\n\nif (!usuario_id) {\n  throw new Error('usuario_id es obligatorio');\n}\n\n// Generar código temporal de 6 caracteres\nconst codigo =\n  Math.random().toString(36).substring(2, 8).toUpperCase();\n\n// Identificador del código\nconst codigo_id =\n  'COD-' +\n  Date.now() +\n  '-' +\n  Math.random().toString(36).substring(2, 8);\n\n// Fechas\nconst creado_en = new Date();\n\nconst expira_en = new Date(\n  creado_en.getTime() + 10 * 60 * 1000\n);\n\nreturn [\n  {\n    json: {\n      codigo_id,\n      usuario_id,\n      codigo,\n      creado_en: creado_en.toISOString(),\n      expira_en: expira_en.toISOString(),\n      estado: 'PENDIENTE',\n      usado_en: ''\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "6516fa2a-9224-42a7-83ae-32f5e8f59153",
+      "name": "WF03 - Generar código"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI",
+          "mode": "list",
+          "cachedResultName": "EP03_Telegram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1377322720,
+          "mode": "list",
+          "cachedResultName": "Codigos_Vinculacion",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit#gid=1377322720"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "codigo_id": "={{ $('WF03 - Generar código').first().json.codigo_id }}",
+            "usuario_id": "={{ $('WF03 - Generar código').first().json.usuario_id }}",
+            "codigo": "={{ $('WF03 - Generar código').first().json.codigo }}",
+            "creado_en": "={{ $('WF03 - Generar código').first().json.creado_en }}",
+            "expira_en": "={{ $('WF03 - Generar código').first().json.expira_en }}",
+            "estado": "={{ $('WF03 - Generar código').first().json.estado }}",
+            "usado_en": "={{ $('WF03 - Generar código').first().json.usado_en }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "codigo_id",
+              "displayName": "codigo_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "codigo",
+              "displayName": "codigo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "creado_en",
+              "displayName": "creado_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "expira_en",
+              "displayName": "expira_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usado_en",
+              "displayName": "usado_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        0
+      ],
+      "id": "0f2a7f53-ff1e-4547-a14e-aea22788f1ea",
+      "name": "WF03 - Guardar código",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WF03_telegram": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Generar código",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Generar código": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Guardar código",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d91345c1-4fb6-45c0-b206-c33eacd2babb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f12b4595a98f03ae4f4054776b13cc8451494c0fa3725f32981f734d7b5a24e7"
+  },
+  "nodeGroups": [],
+  "id": "ib5RiPobelyilGy0",
+  "tags": []
+}

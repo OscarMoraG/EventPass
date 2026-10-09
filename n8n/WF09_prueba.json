@@ -1,0 +1,146 @@
+{
+  "name": "WF09_prueba",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -208
+      ],
+      "id": "0df90800-554f-4191-8ad0-5415ddd05ebf",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Zv1yTMsPMob4N0BJ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Zv1yTMsPMob4N0BJ",
+          "cachedResultName": "WF09_notificaciones"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        64,
+        -208
+      ],
+      "id": "0685aa07-37ed-4908-bc58-0f5813119806",
+      "name": "Call 'WF09_notificaciones'"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8e319003-b146-422e-a1a8-9afbceae986f",
+              "name": "notificacion_id",
+              "value": "TEST-NOT-001",
+              "type": "string"
+            },
+            {
+              "id": "190d2f12-aa03-402b-85dc-037073b486b8",
+              "name": "usuario_id",
+              "value": "USR-1791225927503-6yejbt",
+              "type": "string"
+            },
+            {
+              "id": "47ed95ea-a4f7-4846-857c-f1ef61f4abb0",
+              "name": "tipo",
+              "value": "RECORDATORIO",
+              "type": "string"
+            },
+            {
+              "id": "fbd49eb1-b5fb-439e-85c7-9a14e7894107",
+              "name": "titulo",
+              "value": "Recordatorio EventPass",
+              "type": "string"
+            },
+            {
+              "id": "508a97b0-9fca-4ebd-9db5-7c449b90a46d",
+              "name": "mensaje",
+              "value": "Tienes un evento próximo. Recuerda asistir.",
+              "type": "string"
+            },
+            {
+              "id": "a44a52f9-b4c1-436c-bf13-530d0a8bd40f",
+              "name": "evento_id",
+              "value": "EVT-1791237453003-z4j5v3",
+              "type": "string"
+            },
+            {
+              "id": "b08763a1-5931-4397-a27e-6f982b3cdee2",
+              "name": "inscripcion_id",
+              "value": "INS-1791306051524-ij5ymy",
+              "type": "string"
+            },
+            {
+              "id": "69671d9a-1434-49a3-8dc9-d6b1dcd756cd",
+              "name": "clave_idempotencia",
+              "value": "USR-TEST-004_EVT-1791237453003-z4j5v3_24H",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -160,
+        -208
+      ],
+      "id": "6638a8af-865e-4cf1-9415-aa9bfd9c3c17",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Call 'WF09_notificaciones'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5fea9793-f1e5-46be-9891-a34e53f4176d",
+  "meta": {
+    "instanceId": "f12b4595a98f03ae4f4054776b13cc8451494c0fa3725f32981f734d7b5a24e7"
+  },
+  "nodeGroups": [],
+  "id": "9xd7U9CNW3uEConX",
+  "tags": []
+}

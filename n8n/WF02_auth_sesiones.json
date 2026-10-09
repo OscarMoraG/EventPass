@@ -1,0 +1,346 @@
+{
+  "name": "WF02_sesiones",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sesiones",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1120,
+        -224
+      ],
+      "id": "6c2fd3ff-52cf-4941-b558-056a2ef99da4",
+      "name": "WF02_sesiones",
+      "webhookId": "58108cb4-dafc-4ee1-9c62-1cd55ca33ce3"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1BLIj2BNzyVaiD4YijmRPOXbjzi8jPlz9DSqLPcHLfZg",
+          "mode": "list",
+          "cachedResultName": "EP01_Usuarios",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BLIj2BNzyVaiD4YijmRPOXbjzi8jPlz9DSqLPcHLfZg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Usuarios",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BLIj2BNzyVaiD4YijmRPOXbjzi8jPlz9DSqLPcHLfZg/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "email_normalizado",
+              "lookupValue": "={{ $json.body.email }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -896,
+        -224
+      ],
+      "id": "8aa2590d-07dc-41d7-ade1-1a36f83fc131",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Usuario encontrado en Google Sheets\nconst usuario = $input.first().json;\n\n// Datos enviados por el login\nconst login = $('WF02_sesiones').first().json.body;\n\n// Verificar que exista el usuario\nif (!usuario.usuario_id) {\n  throw new Error('Usuario no encontrado');\n}\n\n// Verificar que el usuario esté activo\nif (usuario.estado !== 'ACTIVO') {\n  throw new Error('El usuario está INACTIVO');\n}\n\n// Verificar que se haya enviado contraseña\nif (!login.password) {\n  throw new Error('La contraseña es obligatoria');\n}\n\n// Preparar la contraseña para calcular su hash\nconst passwordParaHash =\n  String(login.password) + String(usuario.password_salt);\n\n// Devolver los datos necesarios\nreturn [\n  {\n    json: {\n      usuario_id: usuario.usuario_id,\n      email_normalizado: usuario.email_normalizado,\n      password_para_hash: passwordParaHash,\n      password_hash_esperado: usuario.password_hash,\n      password_salt: usuario.password_salt,\n      estado: usuario.estado\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -672,
+        -224
+      ],
+      "id": "e7c38d96-1efd-49af-a189-4c60e479be48",
+      "name": "WF02 - Validar credenciales"
+    },
+    {
+      "parameters": {
+        "value": "={{ $json.password_para_hash }}",
+        "dataPropertyName": "password_hash_calculado"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        -224
+      ],
+      "id": "5964a20c-9a89-4963-99c7-c6eb131f6152",
+      "name": "WF02 - Hash contraseña"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e25e6e2e-ddf3-45c6-b500-2d03b6c7dcfb",
+              "leftValue": "={{ $('WF02 - Hash contraseña').first().json.password_hash_calculado }}",
+              "rightValue": "={{ $('WF02 - Validar credenciales').first().json.password_hash_esperado }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -224,
+        -224
+      ],
+      "id": "1bfe3437-6cc4-4611-be8a-30924afaa057",
+      "name": "WF02 - Contraseña correcta"
+    },
+    {
+      "parameters": {
+        "action": "generate",
+        "dataPropertyName": "token"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -320
+      ],
+      "id": "38baf947-72c8-4eae-a2b7-1dc665d7fdd4",
+      "name": "WF02 - Generar token de sesión"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Datos del usuario encontrados\nconst usuario = $('WF02 - Validar credenciales').first().json;\n\n// Token generado\nconst token = $('WF02 - Generar token de sesión').first().json.token;\n\n// Fechas de la sesión\nconst fecha_inicio = new Date();\nconst fecha_expiracion = new Date(\n  fecha_inicio.getTime() + 2 * 60 * 60 * 1000\n);\n\n// Identificador único de la sesión\nconst sesion_id =\n  'SES-' +\n  Date.now() +\n  '-' +\n  Math.random().toString(36).substring(2, 8);\n\nreturn [\n  {\n    json: {\n      sesion_id,\n      usuario_id: usuario.usuario_id,\n      token,\n      fecha_inicio: fecha_inicio.toISOString(),\n      fecha_expiracion: fecha_expiracion.toISOString(),\n      estado: 'ACTIVA'\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -320
+      ],
+      "id": "6febabd9-e333-451c-9a9f-39aa1be2eb81",
+      "name": "WF02 - Preparar sesión"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA",
+          "mode": "list",
+          "cachedResultName": "EP02_Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sesion_id ": "={{ $('WF02 - Preparar sesión').first().json.sesion_id }}",
+            "usuario_id": "={{ $('WF02 - Preparar sesión').first().json.usuario_id }}",
+            "token": "={{ $('WF02 - Preparar sesión').first().json.token }}",
+            "fecha_inicio": "={{ $('WF02 - Preparar sesión').first().json.fecha_inicio }}",
+            "fecha_expiracion": "={{ $('WF02 - Preparar sesión').first().json.fecha_expiracion }}",
+            "estado": "={{ $('WF02 - Preparar sesión').first().json.estado }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sesion_id ",
+              "displayName": "sesion_id ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "token",
+              "displayName": "token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_inicio",
+              "displayName": "fecha_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_expiracion",
+              "displayName": "fecha_expiracion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        -320
+      ],
+      "id": "9decece4-a023-48d5-993b-1901a152d273",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WF02_sesiones": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "WF02 - Validar credenciales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 - Validar credenciales": {
+      "main": [
+        [
+          {
+            "node": "WF02 - Hash contraseña",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 - Hash contraseña": {
+      "main": [
+        [
+          {
+            "node": "WF02 - Contraseña correcta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 - Contraseña correcta": {
+      "main": [
+        [
+          {
+            "node": "WF02 - Generar token de sesión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 - Generar token de sesión": {
+      "main": [
+        [
+          {
+            "node": "WF02 - Preparar sesión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 - Preparar sesión": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "24223dc9-f68c-4115-be6a-cd2b6e215f8c",
+  "meta": {
+    "instanceId": "f12b4595a98f03ae4f4054776b13cc8451494c0fa3725f32981f734d7b5a24e7"
+  },
+  "nodeGroups": [],
+  "id": "2bBNLcUicgqGGZdD",
+  "tags": []
+}

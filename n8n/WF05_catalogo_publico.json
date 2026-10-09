@@ -1,0 +1,359 @@
+{
+  "name": "WF05_catalogo",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "catalogo",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -496,
+        -800
+      ],
+      "id": "8fd96a5f-9f42-454b-b141-f7d9a72f343c",
+      "name": "WF05 - Catálogo público",
+      "webhookId": "110215af-23a9-4caa-940c-bbd988f62e9d"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg",
+          "mode": "list",
+          "cachedResultName": "EP04_Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -224,
+        -944
+      ],
+      "id": "7ca8db45-8c4f-478d-ab58-90f76a1e3b5b",
+      "name": "WF05 - Consultar eventos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const datos = $input.all();\n\nconst eventos = datos\n  .map(item => item.json)\n  .filter(item => item.evento_id && item.nombre);\n\nconst inscripciones = datos\n  .map(item => item.json)\n  .filter(item => item.inscripcion_id && item.usuario_id);\n\nconst consulta = $('WF05 - Catálogo público').first().json;\nconst query = consulta.query || {};\n\nconst evento_id = String(query.evento_id || '').trim();\nconst categoria = String(query.categoria || '').trim().toLowerCase();\n\nlet resultado = [];\n\nfor (const evento of eventos) {\n  if (String(evento.estado || '').toUpperCase() !== 'PUBLICADO') {\n    continue;\n  }\n\n  if (evento_id && String(evento.evento_id) !== evento_id) {\n    continue;\n  }\n\n  if (\n    categoria &&\n    String(evento.categoria || '').toLowerCase() !== categoria\n  ) {\n    continue;\n  }\n\n  const confirmadas = inscripciones.filter(inscripcion =>\n    String(inscripcion.evento_id) === String(evento.evento_id) &&\n    String(inscripcion.estado || '').toUpperCase() === 'CONFIRMADA'\n  ).length;\n\n  const capacidad = Number(evento.capacidad || 0);\n  const disponibles = Math.max(capacidad - confirmadas, 0);\n\n  resultado.push({\n    json: {\n      ...evento,\n      cupos_confirmados: confirmadas,\n      cupos_disponibles: disponibles\n    }\n  });\n}\n\nreturn resultado;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -800
+      ],
+      "id": "2eef8f77-607e-49e5-b487-6e1126670400",
+      "name": "WF05 - Filtrar publicados"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1PeXQVbBUNZEmvjwAoBsy2uLHd7INGsaNWpGvy_FVvFc",
+          "mode": "list",
+          "cachedResultName": "EP05_Catalogo_Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1PeXQVbBUNZEmvjwAoBsy2uLHd7INGsaNWpGvy_FVvFc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Consultas_Catalogo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1PeXQVbBUNZEmvjwAoBsy2uLHd7INGsaNWpGvy_FVvFc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "consulta_id": "={{ $('WF05 - Preparar log').first().json.consulta_id }}",
+            "fecha": "={{ $('WF05 - Preparar log').first().json.fecha }}",
+            "tipo": "={{ $('WF05 - Preparar log').first().json.tipo }}",
+            "evento_id": "={{ $('WF05 - Preparar log').first().json.evento_id }}",
+            "categoria": "={{ $('WF05 - Preparar log').first().json.categoria }}",
+            "resultado_count": "={{ $('WF05 - Preparar log').first().json.resultado_count }}",
+            "visitor_id": "={{ $('WF05 - Preparar log').first().json.visitor_id }}",
+            "status_http": "={{ $('WF05 - Preparar log').first().json.status_http }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "consulta_id",
+              "displayName": "consulta_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "evento_id",
+              "displayName": "evento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resultado_count",
+              "displayName": "resultado_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "visitor_id",
+              "displayName": "visitor_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status_http",
+              "displayName": "status_http",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        560,
+        -800
+      ],
+      "id": "a23b725c-3aef-40ea-ae90-5da3615ad4ba",
+      "name": "WF05 - Registrar consulta",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const eventos = $input.all();\n\nconst consulta = $('WF05 - Catálogo público').first().json;\nconst query = consulta.query || {};\n\nconst evento_id = String(query.evento_id || '').trim();\nconst categoria = String(query.categoria || '').trim();\n\nlet tipo = 'LISTADO';\n\nif (evento_id) {\n  tipo = 'DETALLE';\n} else if (categoria) {\n  tipo = 'FILTRO';\n}\n\nconst resultado_count = eventos.length;\n\nconst consulta_id =\n  'CON-' +\n  Date.now() +\n  '-' +\n  Math.random().toString(36).substring(2, 8);\n\nreturn [{\n  json: {\n    consulta_id,\n    fecha: new Date().toISOString(),\n    tipo,\n    evento_id,\n    categoria,\n    resultado_count,\n    visitor_id: '',\n    status_http: 200\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -800
+      ],
+      "id": "775594f0-091d-4dc4-b6a5-fe3d7e8d73f1",
+      "name": "WF05 - Preparar log"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recuperar los eventos publicados\nconst eventos = $('WF05 - Filtrar publicados').all();\n\nreturn eventos;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        -800
+      ],
+      "id": "2fb8125c-0f02-4e15-8a2c-be2af631f6da",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k",
+          "mode": "list",
+          "cachedResultName": "EP06_Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inscripciones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -224,
+        -672
+      ],
+      "id": "7c60c258-7508-43e1-8ab3-6d66e2f00242",
+      "name": "WF05 - Consultar inscripciones",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -16,
+        -800
+      ],
+      "id": "4e8b9032-3628-4e1a-a18f-8baf1c165f2c",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WF05 - Catálogo público": {
+      "main": [
+        [
+          {
+            "node": "WF05 - Consultar inscripciones",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WF05 - Consultar eventos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF05 - Consultar eventos": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF05 - Filtrar publicados": {
+      "main": [
+        [
+          {
+            "node": "WF05 - Preparar log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF05 - Preparar log": {
+      "main": [
+        [
+          {
+            "node": "WF05 - Registrar consulta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF05 - Registrar consulta": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF05 - Consultar inscripciones": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "WF05 - Filtrar publicados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a02a9b69-0d6c-4fcb-a3c4-be3c649adca4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f12b4595a98f03ae4f4054776b13cc8451494c0fa3725f32981f734d7b5a24e7"
+  },
+  "nodeGroups": [],
+  "id": "XnyAb4uNRffJcTmV",
+  "tags": []
+}

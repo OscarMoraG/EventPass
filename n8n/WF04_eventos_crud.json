@@ -1,0 +1,324 @@
+{
+  "name": "WF04_eventos_crud",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Administrar evento",
+        "formDescription": "Crear, consultar, actualizar, cancelar o cerrar eventos de EventPass.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Acción",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "CREATE"
+                  },
+                  {
+                    "option": "READ"
+                  },
+                  {
+                    "option": "UPDATE"
+                  },
+                  {
+                    "option": "CANCEL"
+                  },
+                  {
+                    "option": "CLOSE"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Nombre del evento"
+            },
+            {
+              "fieldLabel": "Categoría",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Tecnología"
+                  },
+                  {
+                    "option": "Educación"
+                  },
+                  {
+                    "option": "Cultura"
+                  },
+                  {
+                    "option": "Deportes"
+                  },
+                  {
+                    "option": "Entretenimiento"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Descripción del evento"
+            },
+            {
+              "fieldLabel": "Fecha del evento",
+              "fieldType": "date"
+            },
+            {
+              "fieldLabel": "Hora del evento"
+            },
+            {
+              "fieldLabel": "Lugar del evento"
+            },
+            {
+              "fieldLabel": "Capacidad",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "URL de imagen"
+            },
+            {
+              "fieldLabel": "Organizador"
+            }
+          ]
+        },
+        "options": {
+          "path": ""
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4c662425-78e8-4591-a67c-fdc71185b5d0",
+      "name": "Administrar evento",
+      "webhookId": "139d95b2-6269-4978-b395-0528428aab64"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Datos enviados por el formulario\nconst datos = $input.first().json;\n\n// Generar identificador único del evento\nconst evento_id =\n  'EVT-' +\n  Date.now() +\n  '-' +\n  Math.random().toString(36).substring(2, 8);\n\n// Fechas de control\nconst ahora = new Date();\n\nreturn [\n  {\n    json: {\n      evento_id,\n\n      nombre: datos['Nombre del evento'] || '',\n      categoria: datos['Categoría'] || '',\n      descripcion: datos['Descripción del evento'] || '',\n      fecha: datos['Fecha del evento'] || '',\n      hora: datos['Hora del evento'] || '',\n      lugar: datos['Lugar del evento'] || '',\n      capacidad: datos['Capacidad'] || '',\n      imagen_url: datos['URL de imagen'] || '',\n      organizador: datos['Organizador'] || '',\n\n      accion: datos['Acción'] || '',\n\n      estado: 'BORRADOR',\n\n      fecha_creacion: ahora.toISOString(),\n      fecha_actualizacion: ahora.toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "b8694340-404a-40d5-9c29-fad51034348e",
+      "name": "WF04 - Preparar evento"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg",
+          "mode": "list",
+          "cachedResultName": "EP04_Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Eventos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wcjJ2Ym8XU4bWv_AjpBEBXzPkwNSqVX9tAwrolGBnVg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "evento_id": "={{ $('WF04 - Preparar evento').first().json.evento_id }}",
+            "nombre": "={{ $('WF04 - Preparar evento').first().json.nombre }}",
+            "categoria": "={{ $('WF04 - Preparar evento').first().json.categoria }}",
+            "descripcion": "={{ $('WF04 - Preparar evento').first().json.descripcion }}",
+            "fecha": "={{ $('WF04 - Preparar evento').first().json.fecha }}",
+            "hora": "={{ $('WF04 - Preparar evento').first().json.hora }}",
+            "lugar": "={{ $('WF04 - Preparar evento').first().json.lugar }}",
+            "capacidad": "={{ $('WF04 - Preparar evento').first().json.capacidad }}",
+            "imagen_url": "={{ $('WF04 - Preparar evento').first().json.imagen_url }}",
+            "organizador": "={{ $('WF04 - Preparar evento').first().json.organizador }}",
+            "estado": "={{ $('WF04 - Preparar evento').first().json.estado }}",
+            "fecha_creacion": "={{ $('WF04 - Preparar evento').first().json.fecha_creacion }}",
+            "fecha_actualizacion": "={{ $('WF04 - Preparar evento').first().json.fecha_actualizacion }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "evento_id",
+              "displayName": "evento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "categoria",
+              "displayName": "categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "descripcion",
+              "displayName": "descripcion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hora",
+              "displayName": "hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lugar",
+              "displayName": "lugar",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "capacidad",
+              "displayName": "capacidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "imagen_url",
+              "displayName": "imagen_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizador",
+              "displayName": "organizador",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_creacion",
+              "displayName": "fecha_creacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_actualizacion",
+              "displayName": "fecha_actualizacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        0
+      ],
+      "id": "a6cafac1-efe4-48d1-97d8-fabf2d1415a2",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Administrar evento": {
+      "main": [
+        [
+          {
+            "node": "WF04 - Preparar evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF04 - Preparar evento": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6fb45b5f-f0d0-4e91-be26-90d122412691",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f12b4595a98f03ae4f4054776b13cc8451494c0fa3725f32981f734d7b5a24e7"
+  },
+  "nodeGroups": [],
+  "id": "pgMYVhUaBIoqYtUu",
+  "tags": []
+}
