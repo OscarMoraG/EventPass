@@ -20,7 +20,7 @@
 const FRONTEND_URL =
   "https://eventpass-frontend-theta.vercel.app";
 
-const N8N_BASE_URL = "http://localhost:5678";
+const N8N_BASE_URL = "https://eventpass-frontend-theta.vercel.app";
 
 const API_CATALOGO = `${N8N_BASE_URL}/webhook/catalogo`;
 const API_USUARIOS = `${N8N_BASE_URL}/webhook/usuarios`;
