@@ -1,22 +1,33 @@
 
-/* ==========================================================
+/* =========================================================
    EVENTPASS — CRÓNICAS DEL REINO
-   Catálogo, miniaturas, filtros, modales y navegación
-   ========================================================== */
-
+   Catálogo, imágenes, filtros, modales y conexión con n8n
+   ========================================================= */
 
 /* 1. CONFIGURACIÓN DE N8N */
 
+// IMPORTANTE:
+// Esta dirección funciona únicamente desde el equipo donde
+// se ejecuta n8n. Para producción necesitaremos una URL pública.
 const N8N_BASE_URL = "http://localhost:5678";
+
+// Endpoints de producción identificados en n8n.
 const API_CATALOGO = `${N8N_BASE_URL}/webhook/catalogo`;
+const API_USUARIOS = `${N8N_BASE_URL}/webhook/usuarios`;
+const API_SESIONES = `${N8N_BASE_URL}/webhook/sesiones`;
+const API_TELEGRAM = `${N8N_BASE_URL}/webhook/telegram`;
+const API_INSCRIPCIONES = `${N8N_BASE_URL}/webhook/inscripciones`;
+const API_CHECKIN = `${N8N_BASE_URL}/webhook/checkin`;
+
+// No agregamos WF07, WF08, WF09 ni WF10 a esta lista de
+// endpoints REST: según la información disponible, no tienen
+// un webhook propio para invocarlos de esta manera.
 
 
-/* 2. MINIATURAS DE LOS SEIS EVENTOS
-   Las imágenes están dentro de frontend/assets/.
-   Los nombres deben coincidir exactamente con los archivos. */
+/* 2. IMÁGENES DE LOS SEIS EVENTOS */
 
 const IMAGENES_EVENTOS = {
-  "festival de tecnología bucaramanga":
+  "festival de tecnologia bucaramanga":
     "./assets/festival-tecnologia-bucaramanga.png",
 
   "feria de emprendimiento santander":
@@ -28,7 +39,7 @@ const IMAGENES_EVENTOS = {
   "carrera deportiva eventpass":
     "./assets/carrera-deportiva-eventpass.png",
 
-  "taller de innovación":
+  "taller de innovacion":
     "./assets/taller-de-innovacion.png",
 
   "encuentro cultural eventpass":
@@ -36,341 +47,287 @@ const IMAGENES_EVENTOS = {
 };
 
 
-/* 3. EVENTOS DE DEMOSTRACIÓN
-   Se utilizan solamente si n8n no responde.
-   Sus fechas y cupos son ilustrativos, no datos reales. */
+/* 3. CATÁLOGO DE DEMOSTRACIÓN */
 
 const EVENTOS_DEMO = [
   {
-    evento_id: "demo-1",
     nombre: "Festival de Tecnología Bucaramanga",
     categoria: "Tecnología",
-    descripcion: "Evento de prueba de EventPass sobre tecnología e innovación.",
-    fecha: "2026-10-24",
-    hora: "09:00",
-    lugar: "Bucaramanga, Santander",
-    cupos_disponibles: 150
+    descripcion:
+      "Un encuentro dedicado a la tecnología, la creatividad y la innovación.",
+    fecha: "",
+    hora: "",
+    lugar: "",
+    cupos_disponibles: null
   },
   {
-    evento_id: "demo-2",
     nombre: "Feria de Emprendimiento Santander",
-    categoria: "Entretenimiento",
-    descripcion: "Feria de emprendimiento e innovación de Santander.",
-    fecha: "2026-10-31",
-    hora: "10:00",
-    lugar: "Bucaramanga, Santander",
-    cupos_disponibles: 120
+    categoria: "Emprendimiento",
+    descripcion:
+      "Una feria para descubrir ideas, proyectos y nuevas oportunidades.",
+    fecha: "",
+    hora: "",
+    lugar: "",
+    cupos_disponibles: null
   },
   {
-    evento_id: "demo-3",
     nombre: "Festival Cultural Bucaramanga",
     categoria: "Cultura",
-    descripcion: "Festival cultural con música, arte y expresiones culturales.",
-    fecha: "2026-11-07",
-    hora: "16:00",
-    lugar: "Bucaramanga, Santander",
-    cupos_disponibles: 200
+    descripcion:
+      "Música, arte y expresiones culturales para toda la comunidad.",
+    fecha: "",
+    hora: "",
+    lugar: "",
+    cupos_disponibles: null
   },
   {
-    evento_id: "demo-4",
     nombre: "Carrera Deportiva EventPass",
     categoria: "Deportes",
-    descripcion: "Evento deportivo y carrera recreativa para la comunidad.",
-    fecha: "2026-11-15",
-    hora: "07:00",
-    lugar: "Bucaramanga, Santander",
-    cupos_disponibles: 300
+    descripcion:
+      "Una experiencia deportiva y recreativa para compartir en comunidad.",
+    fecha: "",
+    hora: "",
+    lugar: "",
+    cupos_disponibles: null
   },
   {
-    evento_id: "demo-5",
     nombre: "Taller de Innovación",
-    categoria: "Educación",
-    descripcion: "Taller práctico sobre innovación y nuevas tecnologías.",
-    fecha: "2026-11-21",
-    hora: "14:00",
-    lugar: "Bucaramanga, Santander",
-    cupos_disponibles: 40
+    categoria: "Tecnología",
+    descripcion:
+      "Un taller práctico para explorar nuevas ideas y tecnologías.",
+    fecha: "",
+    hora: "",
+    lugar: "",
+    cupos_disponibles: null
   },
   {
-    evento_id: "demo-6",
     nombre: "Encuentro Cultural EventPass",
     categoria: "Cultura",
-    descripcion: "Encuentro cultural con música, arte y actividades para la comunidad.",
-    fecha: "2026-11-28",
-    hora: "15:00",
-    lugar: "Bucaramanga, Santander",
-    cupos_disponibles: 100
+    descripcion:
+      "Un encuentro con música, arte y actividades culturales.",
+    fecha: "",
+    hora: "",
+    lugar: "",
+    cupos_disponibles: null
   }
 ];
 
 
-/* 4. ICONOS Y TEMAS VISUALES */
+/* 4. ESTADO DE LA APLICACIÓN */
 
-const ICONOS_CATEGORIA = {
-  "Tecnología": "⌘",
-  "Emprendimiento": "⚒",
-  "Cultura": "♫",
-  "Deportes": "⚔",
-  "General": "✦"
-};
-
-const TEMAS_CATEGORIA = {
-  "Tecnología": "tech",
-  "Emprendimiento": "commerce",
-  "Cultura": "culture",
-  "Deportes": "sport",
-  "General": "innovation"
-};
+let eventosActuales = [];
+let eventoSeleccionado = null;
+let modoDemostracion = false;
+let categoriaActual = "Todos";
+let busquedaActual = "";
 
 
-/* 5. ESTADO DE LA APLICACIÓN */
-
-let eventos = [];
-let categoriaActiva = "Todos";
-let busqueda = "";
-let usandoDatosDemo = false;
-let temporizadorNotificacion = null;
-
-
-/* 6. FUNCIONES AUXILIARES */
+/* 5. FUNCIONES AUXILIARES */
 
 function obtenerElemento(id) {
   return document.getElementById(id);
 }
 
-
-function escaparHTML(valor) {
-  return String(valor ?? "").replace(/[&<>"']/g, caracter => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[caracter]);
-}
-
-
-function normalizarTexto(valor) {
-  return String(valor ?? "")
+function normalizarTexto(texto = "") {
+  return String(texto)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim()
-    .toLocaleLowerCase("es")
-    .normalize("NFC");
+    .toLowerCase();
 }
 
+function escaparHTML(valor = "") {
+  return String(valor).replace(/[&<>"']/g, caracter => {
+    const entidades = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    };
 
-function formatearFecha(valor) {
-  if (!valor) return "Fecha por confirmar";
+    return entidades[caracter];
+  });
+}
 
-  const texto = String(valor).trim();
-  const fecha = new Date(`${texto.slice(0, 10)}T12:00:00`);
+function mostrarAviso(mensaje, duracion = 4000) {
+  const aviso = obtenerElemento("site-toast");
 
-  if (Number.isNaN(fecha.getTime())) {
-    return texto;
+  if (!aviso) {
+    console.info(mensaje);
+    return;
   }
 
-  return new Intl.DateTimeFormat("es-CO", {
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  }).format(fecha);
+  aviso.textContent = mensaje;
+  aviso.classList.add("show");
+
+  window.clearTimeout(mostrarAviso.temporizador);
+
+  mostrarAviso.temporizador = window.setTimeout(() => {
+    aviso.classList.remove("show");
+  }, duracion);
 }
-
-
-function formatearHora(valor) {
-  if (!valor) return "Hora por confirmar";
-
-  return String(valor).trim().slice(0, 5);
-}
-
-
-/* 7. CATEGORÍAS
-   También utiliza el nombre del evento para corregir
-   categorías como "Entretenimiento" o "Educación". */
 
 function obtenerCategoria(evento) {
-  const nombre = normalizarTexto(evento.nombre);
-  const categoriaOriginal = String(evento.categoria || "General").trim();
-  const categoria = normalizarTexto(categoriaOriginal);
+  const nombre = normalizarTexto(evento.nombre || "");
+  const categoria = normalizarTexto(evento.categoria || "");
 
   if (
-    nombre.includes("festival de tecnologia") ||
-    nombre.includes("taller de innovacion") ||
-    categoria.includes("tecnolog") ||
-    categoria.includes("innov")
+    nombre.includes("tecnologia") ||
+    nombre.includes("innovacion")
   ) {
     return "Tecnología";
   }
 
   if (
-    nombre.includes("feria de emprendimiento") ||
-    categoria.includes("emprend")
+    nombre.includes("emprendimiento") ||
+    categoria.includes("emprendimiento")
   ) {
     return "Emprendimiento";
   }
 
   if (
-    nombre.includes("carrera deportiva") ||
-    categoria.includes("deport") ||
-    categoria.includes("carrer")
+    nombre.includes("deportiva") ||
+    categoria.includes("deporte")
   ) {
     return "Deportes";
   }
 
   if (
-    nombre.includes("festival cultural") ||
-    nombre.includes("encuentro cultural") ||
-    categoria.includes("cultur") ||
-    categoria.includes("music")
+    nombre.includes("cultural") ||
+    categoria.includes("cultura")
   ) {
     return "Cultura";
   }
 
-  return categoriaOriginal || "General";
+  if (categoria.includes("tecnologia")) {
+    return "Tecnología";
+  }
+
+  return evento.categoria || "Otros";
 }
 
-
-/* 8. OBTENER MINIATURA SEGÚN EL EVENTO */
-
 function obtenerImagenEvento(evento) {
-  const nombre = normalizarTexto(evento.nombre);
-
+  const nombre = normalizarTexto(evento.nombre || "");
   return IMAGENES_EVENTOS[nombre] || "";
 }
 
+function obtenerDescripcion(evento) {
+  return evento.descripcion || "Próximamente encontrarás más información sobre este evento.";
+}
 
-/* 9. NORMALIZAR RESPUESTA DEL CATÁLOGO */
+function obtenerFecha(evento) {
+  if (!evento.fecha) return "Fecha por confirmar";
 
-function normalizarRespuesta(resultado) {
-  if (Array.isArray(resultado)) {
-    return resultado;
+  return evento.hora
+    ? `${evento.fecha} · ${evento.hora}`
+    : evento.fecha;
+}
+
+function obtenerLugar(evento) {
+  return evento.lugar || "Lugar por confirmar";
+}
+
+async function solicitarJSON(url, opciones = {}) {
+  const respuesta = await fetch(url, {
+    ...opciones,
+    headers: {
+      Accept: "application/json",
+      ...(opciones.body
+        ? { "Content-Type": "application/json" }
+        : {}),
+      ...opciones.headers
+    }
+  });
+
+  const texto = await respuesta.text();
+  let datos = null;
+
+  if (texto) {
+    try {
+      datos = JSON.parse(texto);
+    } catch {
+      datos = { mensaje: texto };
+    }
   }
 
-  if (resultado && Array.isArray(resultado.data)) {
-    return resultado.data;
+  if (!respuesta.ok) {
+    const mensaje =
+      datos?.mensaje ||
+      datos?.message ||
+      `La solicitud falló con el estado HTTP ${respuesta.status}.`;
+
+    throw new Error(mensaje);
   }
 
-  if (resultado && Array.isArray(resultado.eventos)) {
-    return resultado.eventos;
-  }
-
-  if (
-    resultado &&
-    typeof resultado === "object" &&
-    (resultado.nombre || resultado.evento_id)
-  ) {
-    return [resultado];
-  }
-
-  return [];
+  return datos;
 }
 
 
-/* 10. NOTIFICACIONES */
-
-function mostrarAviso(mensaje) {
-  const toast = obtenerElemento("site-toast");
-
-  if (!toast) {
-    console.info(mensaje);
-    return;
-  }
-
-  toast.textContent = mensaje;
-  toast.classList.add("show");
-
-  clearTimeout(temporizadorNotificacion);
-
-  temporizadorNotificacion = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 4000);
-}
-
-
-/* 11. CONSULTAR EVENTOS EN N8N */
+/* 6. CARGAR EL CATÁLOGO */
 
 async function cargarEventos() {
   const contenedor = obtenerElemento("eventos-container");
 
   if (contenedor) {
-    contenedor.setAttribute("aria-busy", "true");
-    contenedor.innerHTML = `
-      <p class="loading">
-        Consultando los pergaminos del reino...
-      </p>
-    `;
+    contenedor.innerHTML =
+      '<p class="loading-message">Consultando los registros del reino...</p>';
   }
 
   try {
-    const respuesta = await fetch(API_CATALOGO, {
-      method: "GET",
-      headers: {
-        Accept: "application/json"
-      }
+    const datos = await solicitarJSON(API_CATALOGO, {
+      method: "GET"
     });
 
-    if (!respuesta.ok) {
-      throw new Error(`Error HTTP ${respuesta.status}`);
+    let lista = Array.isArray(datos)
+      ? datos
+      : Array.isArray(datos?.data)
+        ? datos.data
+        : Array.isArray(datos?.eventos)
+          ? datos.eventos
+          : Array.isArray(datos?.body)
+            ? datos.body
+            : null;
+
+    if (!lista) {
+      throw new Error(
+        "La respuesta del catálogo no contiene una lista reconocida de eventos."
+      );
     }
 
-    const resultado = await respuesta.json();
-    const datos = normalizarRespuesta(resultado);
-
-    if (datos.length === 0) {
-      throw new Error("El catálogo no devolvió eventos reconocibles.");
-    }
-
-    eventos = datos;
-    usandoDatosDemo = false;
-
-    renderizarEventos();
-
-  } catch (error) {
-    console.warn(
-      "No fue posible consultar el catálogo de n8n:",
-      error.message
+    // Solo mostramos los seis eventos aprobados para el frontend.
+    const nombresPermitidos = new Set(
+      EVENTOS_DEMO.map(evento => normalizarTexto(evento.nombre))
     );
 
-    eventos = EVENTOS_DEMO.map(evento => ({ ...evento }));
-    usandoDatosDemo = true;
+    eventosActuales = lista.filter(evento =>
+      nombresPermitidos.has(normalizarTexto(evento.nombre))
+    );
 
-    renderizarEventos();
+    modoDemostracion = false;
+
+    if (eventosActuales.length === 0) {
+      throw new Error(
+        "El catálogo no devolvió ninguno de los seis eventos esperados."
+      );
+    }
+  } catch (error) {
+    console.error("Error cargando el catálogo:", error);
+
+    eventosActuales = EVENTOS_DEMO;
+    modoDemostracion = true;
 
     mostrarAviso(
-      "Vista de demostración: no se pudo conectar con el catálogo de n8n."
+      "No se pudo consultar el catálogo de n8n. Se muestran datos de demostración."
     );
-
-  } finally {
-    if (contenedor) {
-      contenedor.setAttribute("aria-busy", "false");
-    }
   }
+
+  renderizarEventos();
 }
 
 
-/* 12. INFORMACIÓN DE CUPOS */
+/* 7. RENDERIZAR LAS TARJETAS */
 
-function obtenerTextoCupos(evento) {
-  const valor = evento.cupos_disponibles;
-
-  if (valor === undefined || valor === null || valor === "") {
-    return "Disponibilidad por confirmar";
-  }
-
-  const cupos = Number(valor);
-
-  if (!Number.isFinite(cupos)) {
-    return "Disponibilidad por confirmar";
-  }
-
-  if (cupos <= 0) {
-    return "Sin cupos disponibles";
-  }
-
-  return `${cupos} cupos disponibles`;
-}
-
-
-/* 13. DIBUJAR TARJETAS DEL CATÁLOGO */
 
 function renderizarEventos() {
   const contenedor = obtenerElemento("eventos-container");
@@ -378,392 +335,398 @@ function renderizarEventos() {
 
   if (!contenedor) return;
 
-  const filtrados = eventos.filter(evento => {
+  const eventosFiltrados = eventosActuales.filter(evento => {
     const categoria = obtenerCategoria(evento);
+    const textoBusqueda = normalizarTexto(
+      `${evento.nombre || ""} ${evento.descripcion || ""} ${categoria}`
+    );
 
     const coincideCategoria =
-      categoriaActiva === "Todos" ||
-      categoria === categoriaActiva;
+      categoriaActual === "Todos" ||
+      normalizarTexto(categoria) === normalizarTexto(categoriaActual);
 
-    const textoBusqueda = [
-      evento.nombre,
-      evento.categoria,
-      evento.lugar,
-      evento.descripcion
-    ].join(" ");
-
-    const coincideBusqueda = normalizarTexto(textoBusqueda)
-      .includes(normalizarTexto(busqueda));
+    const coincideBusqueda =
+      textoBusqueda.includes(normalizarTexto(busquedaActual));
 
     return coincideCategoria && coincideBusqueda;
   });
 
   if (contador) {
-    contador.textContent = String(filtrados.length).padStart(2, "0");
+    contador.textContent = String(eventosFiltrados.length);
   }
 
-  if (filtrados.length === 0) {
-    contenedor.innerHTML = `
-      <div class="empty">
-        <p>No encontramos aventuras con esos criterios.</p>
-        <button
-          class="button outline"
-          type="button"
-          id="limpiar-filtros"
-        >
-          Ver todas las aventuras
-        </button>
-      </div>
-    `;
-
-    obtenerElemento("limpiar-filtros")?.addEventListener("click", () => {
-      categoriaActiva = "Todos";
-      busqueda = "";
-
-      const campo = obtenerElemento("event-search");
-
-      if (campo) {
-        campo.value = "";
-      }
-
-      actualizarFiltros();
-      renderizarEventos();
-    });
-
+  if (eventosFiltrados.length === 0) {
+    contenedor.innerHTML =
+      '<p class="empty-message">No encontramos eventos con esos criterios.</p>';
     return;
   }
 
-  contenedor.innerHTML = filtrados.map((evento, indice) => {
-    const categoria = obtenerCategoria(evento);
-    const tema = TEMAS_CATEGORIA[categoria] || "innovation";
-    const icono = ICONOS_CATEGORIA[categoria] || ICONOS_CATEGORIA.General;
+  contenedor.innerHTML = eventosFiltrados.map(evento => {
+    const nombre = escaparHTML(evento.nombre || "Evento EventPass");
+    const categoria = escaparHTML(obtenerCategoria(evento));
+    const descripcion = escaparHTML(obtenerDescripcion(evento));
     const imagen = obtenerImagenEvento(evento);
+    const fecha = escaparHTML(obtenerFecha(evento));
 
-    const visual = imagen
-      ? `
-        <div class="event-visual" data-theme="${escaparHTML(tema)}">
-          <img
-            class="event-thumbnail"
-            src="${escaparHTML(imagen)}"
-            alt="${escaparHTML(evento.nombre || "Imagen del evento")}"
-            loading="lazy"
-          >
-        </div>
-      `
-      : `
-        <div class="event-visual" data-theme="${escaparHTML(tema)}">
-          <span class="event-symbol" aria-hidden="true">${icono}</span>
-        </div>
-      `;
+    // Aceptamos los nombres de campos más habituales del catálogo.
+    const cuposDisponibles =
+      evento.cupos_disponibles ??
+      evento.cuposDisponibles ??
+      evento.cupos_disponibles_evento ??
+      null;
+
+    const cuposHTML = cuposDisponibles !== null &&
+      cuposDisponibles !== undefined &&
+      cuposDisponibles !== ""
+        ? `<p class="event-spots"><strong>Cupos disponibles:</strong> ${escaparHTML(cuposDisponibles)}</p>`
+        : "";
+
+    const imagenHTML = imagen
+      ? `<img class="event-thumbnail" src="${imagen}" alt="${nombre}" loading="lazy">`
+      : '<div class="event-visual-placeholder" aria-hidden="true">✦</div>';
 
     return `
       <article class="event-card">
-        ${visual}
+        <div class="event-visual">
+          ${imagenHTML}
+          <span class="event-category">${categoria}</span>
+        </div>
 
-        <div class="event-body">
+        <div class="event-card-content">
+          <p class="event-date">${fecha}</p>
+          <h3>${nombre}</h3>
+          <p class="event-description">${descripcion}</p>
+          ${cuposHTML}
 
-          <span class="event-category">
-            ${escaparHTML(categoria)}
-          </span>
-
-          <h3>
-            ${escaparHTML(evento.nombre || "Evento sin nombre")}
-          </h3>
-
-          <p class="event-description">
-            ${escaparHTML(
-              evento.descripcion ||
-              "Los detalles de esta aventura estarán disponibles próximamente."
-            )}
-          </p>
-
-          <div class="event-meta">
-            <span>
-              <span class="meta-icon" aria-hidden="true">✧</span>
-              ${escaparHTML(formatearFecha(evento.fecha))}
-            </span>
-
-            <span>
-              <span class="meta-icon" aria-hidden="true">◷</span>
-              ${escaparHTML(formatearHora(evento.hora))}
-            </span>
-
-            <span>
-              <span class="meta-icon" aria-hidden="true">⌖</span>
-              ${escaparHTML(evento.lugar || "Lugar por confirmar")}
-            </span>
-          </div>
-
-          <div class="event-card-bottom">
-            <span class="seats">
-              ${escaparHTML(obtenerTextoCupos(evento))}
-            </span>
-
-            <button
-              class="event-open"
-              type="button"
-              data-event-index="${indice}"
-            >
-              Descubrir <span aria-hidden="true">→</span>
-            </button>
-          </div>
-
+          <button
+            type="button"
+            class="btn-event-details"
+            data-event-name="${escaparHTML(evento.nombre || "")}"
+          >
+            Descubrir evento
+          </button>
         </div>
       </article>
     `;
   }).join("");
 
-  contenedor.querySelectorAll("[data-event-index]").forEach(boton => {
+  contenedor.querySelectorAll("[data-event-name]").forEach(boton => {
     boton.addEventListener("click", () => {
-      const indice = Number(boton.dataset.eventIndex);
-      const evento = filtrados[indice];
+      const nombreBuscado = normalizarTexto(boton.dataset.eventName);
+      const evento = eventosActuales.find(
+        item => normalizarTexto(item.nombre || "") === nombreBuscado
+      );
 
-      if (evento) {
-        abrirDetalleEvento(evento);
-      }
+      abrirDetalleEvento(evento);
     });
   });
 }
 
 
-/* 14. BUSCADOR Y FILTROS */
-
-function actualizarFiltros() {
-  document.querySelectorAll(".filter-chip").forEach(boton => {
-    const activa = boton.dataset.category === categoriaActiva;
-
-    boton.classList.toggle("active", activa);
-    boton.setAttribute("aria-pressed", String(activa));
-  });
-}
-
+/* 8. FILTROS Y BÚSQUEDA */
 
 function configurarFiltros() {
   document.querySelectorAll(".filter-chip").forEach(boton => {
     boton.addEventListener("click", () => {
-      categoriaActiva = boton.dataset.category || "Todos";
+      categoriaActual = boton.dataset.category || "Todos";
 
-      actualizarFiltros();
+      document.querySelectorAll(".filter-chip").forEach(chip => {
+        chip.classList.toggle("active", chip === boton);
+      });
+
       renderizarEventos();
     });
   });
 
-  const campo = obtenerElemento("event-search");
+  const buscador = obtenerElemento("event-search");
 
-  campo?.addEventListener("input", evento => {
-    busqueda = evento.target.value;
+  buscador?.addEventListener("input", () => {
+    busquedaActual = buscador.value || "";
     renderizarEventos();
   });
 }
 
 
-/* 15. DETALLE DE EVENTO */
+/* 9. DETALLE DEL EVENTO */
 
 function abrirDetalleEvento(evento) {
+  if (!evento) return;
+
+  eventoSeleccionado = evento;
+
+  const modal = obtenerElemento("event-modal");
   const contenido = obtenerElemento("event-modal-content");
 
-  if (!contenido) return;
+  if (!modal || !contenido) return;
 
-  const nombre = escaparHTML(evento.nombre || "Evento sin nombre");
+  const nombre = escaparHTML(evento.nombre || "Evento EventPass");
   const categoria = escaparHTML(obtenerCategoria(evento));
-  const descripcion = escaparHTML(
-    evento.descripcion || "No hay descripción disponible."
-  );
+  const descripcion = escaparHTML(obtenerDescripcion(evento));
   const imagen = obtenerImagenEvento(evento);
 
+  const cupos = evento.cupos_disponibles ??
+    evento.cuposDisponibles ??
+    null;
+
+  const imagenHTML = imagen
+    ? `<div class="event-visual">
+         <img class="event-thumbnail" src="${imagen}" alt="${nombre}">
+       </div>`
+    : "";
+
+  const datosCupos = cupos !== null
+    ? `<p><strong>Cupos disponibles:</strong> ${escaparHTML(cupos)}</p>`
+    : "";
+
   contenido.innerHTML = `
-    ${
-      imagen
-        ? `
-          <div class="event-visual" data-theme="innovation">
-            <img
-              class="event-thumbnail"
-              src="${escaparHTML(imagen)}"
-              alt="${nombre}"
-            >
-          </div>
-        `
-        : ""
-    }
+    ${imagenHTML}
 
-    <p class="modal-kicker">${categoria}</p>
+    <p class="event-category">${categoria}</p>
+    <h2>${nombre}</h2>
+    <p>${descripcion}</p>
 
-    <h2 id="event-modal-title">${nombre}</h2>
-
-    <p class="modal-description-text">${descripcion}</p>
-
-    <div class="modal-meta">
-      <span>✧ Fecha: ${escaparHTML(formatearFecha(evento.fecha))}</span>
-      <span>◷ Hora: ${escaparHTML(formatearHora(evento.hora))}</span>
-      <span>⌖ Lugar: ${escaparHTML(evento.lugar || "Lugar por confirmar")}</span>
-      <span>⚑ ${escaparHTML(obtenerTextoCupos(evento))}</span>
-    </div>
-
-    <p class="notice">
-      ${
-        usandoDatosDemo
-          ? "Información de demostración. No se enviará ninguna inscripción."
-          : "La inscripción requiere conectar y verificar el flujo correspondiente de n8n."
-      }
-    </p>
+    <p><strong>Fecha:</strong> ${escaparHTML(obtenerFecha(evento))}</p>
+    <p><strong>Lugar:</strong> ${escaparHTML(obtenerLugar(evento))}</p>
+    ${datosCupos}
 
     <button
-      class="button gold full"
       type="button"
-      id="boton-inscripcion"
-      ${usandoDatosDemo ? "disabled" : ""}
+      class="btn-primary"
+      id="btn-inscribirse-evento"
+      ${modoDemostracion ? "disabled" : ""}
     >
-      Solicitar inscripción
+      ${modoDemostracion ? "Catálogo de demostración" : "Inscribirme"}
     </button>
+
+    ${
+      modoDemostracion
+        ? '<p class="notice">La inscripción requiere conexión con n8n.</p>'
+        : ""
+    }
   `;
 
-  abrirModal("event-modal");
+  contenido.querySelector("#btn-inscribirse-evento")
+    ?.addEventListener("click", iniciarInscripcion);
 
-  obtenerElemento("boton-inscripcion")?.addEventListener("click", () => {
-    mostrarAviso(
-      "La inscripción todavía requiere conectar y verificar el webhook de WF06."
-    );
-  });
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden", "false");
 }
 
-
-/* 16. CONTROL DE MODALES */
-
-function abrirModal(id) {
+function cerrarModal(id) {
   const modal = obtenerElemento(id);
 
-  if (!modal) {
-    console.warn(`No se encontró el modal: ${id}`);
-    return;
-  }
-
-  modal.hidden = false;
-  document.body.classList.add("modal-open");
-
-  modal.querySelector("[data-close-modal]")?.focus();
-}
-
-
-function cerrarModal(modal) {
   if (!modal) return;
 
-  modal.hidden = true;
-
-  const quedaOtroAbierto = Array.from(
-    document.querySelectorAll(".modal-backdrop")
-  ).some(elemento => !elemento.hidden);
-
-  document.body.classList.toggle("modal-open", quedaOtroAbierto);
+  modal.classList.remove("active");
+  modal.setAttribute("aria-hidden", "true");
 }
 
-
 function configurarModales() {
-  document.querySelectorAll("[data-open-modal]").forEach(boton => {
-    boton.addEventListener("click", () => {
-      const destino = boton.dataset.openModal;
-
-      document.querySelectorAll(".modal-backdrop").forEach(modal => {
-        cerrarModal(modal);
-      });
-
-      abrirModal(destino);
-    });
-  });
-
   document.querySelectorAll("[data-close-modal]").forEach(boton => {
     boton.addEventListener("click", () => {
-      cerrarModal(boton.closest(".modal-backdrop"));
+      const modal = boton.closest(".modal");
+
+      if (modal?.id) {
+        cerrarModal(modal.id);
+      }
     });
   });
 
-  document.querySelectorAll(".modal-backdrop").forEach(modal => {
+  document.querySelectorAll("[data-open-modal]").forEach(boton => {
+    boton.addEventListener("click", () => {
+      const id = boton.dataset.openModal;
+      const modal = obtenerElemento(id);
+
+      if (!modal) return;
+
+      modal.classList.add("active");
+      modal.setAttribute("aria-hidden", "false");
+    });
+  });
+
+  document.querySelectorAll(".modal").forEach(modal => {
     modal.addEventListener("click", evento => {
       if (evento.target === modal) {
-        cerrarModal(modal);
+        cerrarModal(modal.id);
       }
     });
   });
 
   document.addEventListener("keydown", evento => {
     if (evento.key === "Escape") {
-      document.querySelectorAll(".modal-backdrop").forEach(modal => {
-        if (!modal.hidden) {
-          cerrarModal(modal);
-        }
+      document.querySelectorAll(".modal.active").forEach(modal => {
+        cerrarModal(modal.id);
       });
     }
   });
 }
 
 
-/* 17. FORMULARIOS
-   Los avisos no crean cuentas ni validan credenciales en n8n. */
+/* 10. LEER LOS CAMPOS DE UN FORMULARIO */
+
+function obtenerValorCampo(formulario, selectores) {
+  for (const selector of selectores) {
+    const campo = formulario.querySelector(selector);
+
+    if (campo) {
+      return campo.value.trim();
+    }
+  }
+
+  return "";
+}
+
+
+/* 11. FORMULARIOS: REGISTRO E INICIO DE SESIÓN */
 
 function configurarFormularios() {
   const formularioIngreso = obtenerElemento("login-form");
   const formularioRegistro = obtenerElemento("register-form");
 
-  formularioIngreso?.addEventListener("submit", evento => {
+  formularioIngreso?.addEventListener("submit", async evento => {
     evento.preventDefault();
 
+    // No se envían credenciales hasta confirmar el contrato
+    // de entrada y salida de WF02_sesiones.
     mostrarAviso(
-      "El inicio de sesión aún no está conectado al flujo de autenticación."
+      "El inicio de sesión requiere conectar y validar el flujo WF02_sesiones."
     );
   });
 
-  formularioRegistro?.addEventListener("submit", evento => {
+  formularioRegistro?.addEventListener("submit", async evento => {
     evento.preventDefault();
 
-    mostrarAviso(
-      "El registro aún no está conectado al webhook de usuarios WF01."
+    const nombre = obtenerValorCampo(formularioRegistro, [
+      '[name="nombre"]',
+      '[name="name"]',
+      'input[type="text"]'
+    ]);
+
+    const correo = obtenerValorCampo(formularioRegistro, [
+      '[name="correo"]',
+      '[name="email"]',
+      'input[type="email"]'
+    ]);
+
+    const contrasena = obtenerValorCampo(formularioRegistro, [
+      '[name="contrasena"]',
+      '[name="password"]',
+      'input[type="password"]'
+    ]);
+
+    if (!nombre || !correo || !contrasena) {
+      mostrarAviso("Completa el nombre, correo y contraseña.");
+      return;
+    }
+
+    if (modoDemostracion) {
+      mostrarAviso(
+        "No se puede registrar desde el catálogo de demostración."
+      );
+      return;
+    }
+
+    const boton = formularioRegistro.querySelector(
+      'button[type="submit"], input[type="submit"]'
     );
-  });
-}
 
+    if (boton) {
+      boton.disabled = true;
+    }
 
-/* 18. MENÚ PARA MÓVILES */
+    try {
+      /*
+       * CONTRATO PENDIENTE DE CONFIRMAR:
+       * Este objeto utiliza nombre, correo y contrasena.
+       * Antes de considerar el registro terminado, debemos
+       * verificar que WF01 espere exactamente estas claves
+       * y que gestione la contraseña de forma segura.
+       */
+      const resultado = await solicitarJSON(API_USUARIOS, {
+        method: "POST",
+        body: JSON.stringify({
+          nombre,
+          correo,
+          contrasena
+        })
+      });
 
-function configurarMenuMovil() {
-  const boton = obtenerElemento("menu-toggle");
-  const navegacion = obtenerElemento("main-nav");
+      console.info("Respuesta de WF01:", resultado);
 
-  if (!boton || !navegacion) return;
+      mostrarAviso(
+        resultado?.mensaje ||
+        resultado?.message ||
+        "Solicitud enviada a WF01. Verifica la respuesta del workflow."
+      );
 
-  boton.addEventListener("click", () => {
-    const abierto = navegacion.classList.toggle("open");
+      // No afirmamos que la cuenta se creó si WF01 no lo confirma.
+    } catch (error) {
+      console.error("Error al registrar usuario:", error);
 
-    boton.setAttribute("aria-expanded", String(abierto));
-    boton.setAttribute(
-      "aria-label",
-      abierto ? "Cerrar menú" : "Abrir menú"
-    );
-  });
-
-  navegacion.querySelectorAll("a").forEach(enlace => {
-    enlace.addEventListener("click", () => {
-      navegacion.classList.remove("open");
-      boton.setAttribute("aria-expanded", "false");
-      boton.setAttribute("aria-label", "Abrir menú");
-    });
-  });
-
-  window.addEventListener("resize", () => {
-    if (window.innerWidth > 760) {
-      navegacion.classList.remove("open");
-      boton.setAttribute("aria-expanded", "false");
-      boton.setAttribute("aria-label", "Abrir menú");
+      mostrarAviso(
+        `No fue posible completar el registro: ${error.message}`
+      );
+    } finally {
+      if (boton) {
+        boton.disabled = false;
+      }
     }
   });
 }
 
 
-/* 19. INICIAR EVENTPASS */
+/* 12. INSCRIPCIONES */
+
+async function iniciarInscripcion() {
+  if (!eventoSeleccionado) return;
+
+  if (modoDemostracion) {
+    mostrarAviso("La inscripción no está disponible en modo demostración.");
+    return;
+  }
+
+  // WF06 requiere una sesión/usuario y el identificador del evento.
+  // No enviamos una inscripción incompleta ni inventamos esos datos.
+  mostrarAviso(
+    "Antes de inscribirte debemos conectar WF02 (sesiones) y confirmar el formato que espera WF06."
+  );
+}
+
+
+/* 13. NAVEGACIÓN MÓVIL */
+
+function configurarMenuMovil() {
+  const botonMenu = document.querySelector(
+    ".menu-toggle, #menu-toggle, [data-menu-toggle]"
+  );
+
+  const navegacion = document.querySelector(
+    ".nav-links, #nav-links, [data-nav-links]"
+  );
+
+  if (!botonMenu || !navegacion) return;
+
+  botonMenu.addEventListener("click", () => {
+    const abierto = navegacion.classList.toggle("active");
+
+    botonMenu.setAttribute("aria-expanded", String(abierto));
+  });
+
+  navegacion.querySelectorAll("a").forEach(enlace => {
+    enlace.addEventListener("click", () => {
+      navegacion.classList.remove("active");
+      botonMenu.setAttribute("aria-expanded", "false");
+    });
+  });
+}
+
+
+/* 14. INICIALIZACIÓN */
 
 document.addEventListener("DOMContentLoaded", () => {
   configurarFiltros();
   configurarModales();
   configurarFormularios();
   configurarMenuMovil();
-
   cargarEventos();
 });
