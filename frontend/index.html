@@ -1,253 +1,473 @@
+
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#100d16">
+  <meta name="description" content="EventPass: descubre festivales, aventuras y encuentros que merecen convertirse en historia.">
 
-    <title>EventPass | Vive el evento</title>
+  <title>EventPass | Crónicas del Reino</title>
 
-    <link rel="stylesheet" href="./css/styles.css?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./css/styles.css?v=6">
+  <script src="./js/app.js?v=6" defer></script>
 </head>
 
 <body>
+  <!-- CABECERA -->
+  <header class="site-header" id="inicio">
 
-    <!-- NAVBAR -->
-    <header class="navbar">
+    <a class="brand" href="#inicio" aria-label="EventPass, inicio">
+      <span class="crest" aria-hidden="true">
+        <svg viewBox="0 0 64 76" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 3 L57 12 L54 49 L32 72 L10 49 L7 12 Z"
+                fill="#17101d" stroke="#dca74e" stroke-width="1.5"/>
+          <path d="M32 9 L51 16 L48 45 L32 63 L16 45 L13 16 Z"
+                fill="none" stroke="#8c5d24" stroke-width="0.8"/>
+          <path d="M32 15 L32 57"
+                stroke="#8c5d24" stroke-width="0.7"/>
+          <text x="32" y="44" text-anchor="middle"
+                fill="#f5d58c" font-family="Cinzel, Georgia, serif"
+                font-size="31" font-weight="600">E</text>
+          <path d="M21 52 L32 59 L43 52"
+                fill="none" stroke="#dca74e" stroke-width="1"/>
+          <path d="M32 1 L35 5 L32 9 L29 5 Z"
+                fill="#f5d58c"/>
+        </svg>
+      </span>
 
-        <div class="logo">
-            <span class="logo-icon">E</span>
-            <span>EventPass</span>
+      <span class="brand-copy">
+        <span class="brand-name">Event<span>Pass</span></span>
+        <span class="brand-subtitle">Crónicas del Reino</span>
+      </span>
+    </a>
+
+    <button class="menu-toggle" id="menu-toggle" type="button"
+            aria-label="Abrir menú" aria-expanded="false"
+            aria-controls="main-nav">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav class="main-nav" id="main-nav" aria-label="Navegación principal">
+      <a href="#inicio">El reino</a>
+      <a href="#eventos">Aventuras</a>
+      <a href="#nosotros">Nuestra orden</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="button outline small" type="button"
+              data-open-modal="login-modal">
+        Ingresar
+      </button>
+
+      <button class="button gold small" type="button"
+              data-open-modal="register-modal">
+        Unirme al reino <span aria-hidden="true">↗</span>
+      </button>
+    </div>
+
+  </header>
+
+  <main>
+
+    <!-- HERO: CASTILLO ÉPICO -->
+    <section class="hero" aria-labelledby="hero-title">
+
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-art-overlay"></div>
+      </div>
+
+      <div class="hero-content">
+
+        <p class="hero-eyebrow">
+          <span aria-hidden="true">✧</span>
+          Una nueva era de encuentros
+          <span aria-hidden="true">✧</span>
+        </p>
+
+        <h1 id="hero-title">
+          Tu próxima
+          <em>gran leyenda</em>
+          comienza aquí.
+        </h1>
+
+        <p class="hero-description">
+          Cruza las puertas del reino. Descubre festivales,
+          desafíos y encuentros que merecen convertirse en historia.
+        </p>
+
+        <div class="hero-actions">
+          <a class="button gold large" href="#eventos">
+            Explorar aventuras <span aria-hidden="true">→</span>
+          </a>
+
+          <a class="hero-secondary-link" href="#nosotros">
+            Conoce nuestra orden <span aria-hidden="true">↗</span>
+          </a>
         </div>
 
-        <nav>
-            <a href="#inicio">Inicio</a>
-            <a href="#eventos">Eventos</a>
-            <a href="#nosotros">Nosotros</a>
-        </nav>
-
-        <div class="nav-buttons">
-            <button class="btn btn-outline">Iniciar sesión</button>
-            <button class="btn btn-primary">Registrarse</button>
+        <div class="hero-promise">
+          <span class="compass" aria-hidden="true">✥</span>
+          <div>
+            <strong>Seis aventuras te esperan</strong>
+            <span>Elige tu próxima historia.</span>
+          </div>
         </div>
 
-    </header>
-
-
-    <!-- HERO -->
-    <main>
-
-        <section id="inicio" class="hero">
-
-            <div class="hero-content">
-
-                <span class="badge">
-                    ✦ EXPERIENCIAS QUE CONECTAN
-                </span>
-
-                <h1>
-                    Vive el evento.<br>
-                    <span>Conecta con más.</span>
-                </h1>
-
-                <p>
-                    Descubre eventos increíbles, reserva tu lugar
-                    y vive experiencias que recordarás.
-                </p>
-
-                <div class="hero-buttons">
-                    <a href="#eventos" class="btn btn-primary btn-large">
-                        Explorar eventos
-                    </a>
-
-                    <button class="btn btn-outline btn-large">
-                        Crear cuenta
-                    </button>
-                </div>
-
-            </div>
-
-            <div class="hero-card">
-
-                <div class="hero-card-top">
-                    <span>PRÓXIMO EVENTO</span>
-                    <span class="status">● DISPONIBLE</span>
-                </div>
-
-                <div class="hero-event-image">
-                    <span>EVENTPASS</span>
-                </div>
-
-                <div class="hero-event-info">
-
-                    <span class="category">TECNOLOGÍA</span>
-
-                    <h3>
-                        Festival de Tecnología
-                    </h3>
-
-                    <p>
-                        📍 Bucaramanga
-                    </p>
-
-                    <div class="event-date">
-                        <strong>07</strong>
-                        <span>
-                            OCT<br>
-                            2026
-                        </span>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- EVENTOS -->
-        <section id="eventos" class="events-section">
-
-            <div class="section-heading">
-
-                <div>
-                    <span class="section-label">
-                        DESCUBRE
-                    </span>
-
-                    <h2>
-                        Eventos destacados
-                    </h2>
-
-                    <p>
-                        Encuentra tu próxima experiencia.
-                    </p>
-                </div>
-
-                <button class="btn btn-outline">
-                    Ver todos
-                </button>
-
-            </div>
-
-
-            <div class="filters">
-
-                <button class="filter active">
-                    Todos
-                </button>
-
-                <button class="filter">
-                    Tecnología
-                </button>
-
-                <button class="filter">
-                    Música
-                </button>
-
-                <button class="filter">
-                    Deportes
-                </button>
-
-                <button class="filter">
-                    Cultura
-                </button>
-
-            </div>
-
-
-            <div id="eventos-container" class="events-grid">
-
-                <!-- Los eventos de n8n aparecerán aquí -->
-
-            </div>
-
-        </section>
-
-
-        <!-- CARACTERÍSTICAS -->
-        <section id="nosotros" class="features-section">
-
-            <span class="section-label">
-                EVENTPASS
-            </span>
-
-            <h2>
-                Todo lo que necesitas para<br>
-                vivir mejores experiencias.
-            </h2>
-
-            <div class="features-grid">
-
-                <article class="feature-card">
-                    <div class="feature-icon">◈</div>
-
-                    <h3>
-                        Descubre
-                    </h3>
-
-                    <p>
-                        Explora eventos y encuentra
-                        experiencias que se adapten a ti.
-                    </p>
-                </article>
-
-
-                <article class="feature-card">
-                    <div class="feature-icon">✓</div>
-
-                    <h3>
-                        Inscríbete
-                    </h3>
-
-                    <p>
-                        Asegura tu lugar de forma rápida
-                        y sencilla.
-                    </p>
-                </article>
-
-
-                <article class="feature-card">
-                    <div class="feature-icon">★</div>
-
-                    <h3>
-                        Disfruta
-                    </h3>
-
-                    <p>
-                        Recibe recordatorios y notificaciones
-                        importantes sobre tus eventos.
-                    </p>
-                </article>
-
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <!-- FOOTER -->
-    <footer>
-
-        <div class="footer-logo">
-            <span class="logo-icon">E</span>
-            <strong>EventPass</strong>
+      </div>
+
+      <div class="hero-footer" aria-hidden="true">
+        <span><b>01</b> / El comienzo</span>
+        <a href="#eventos" tabindex="-1">Desliza para descubrir ↓</a>
+        <span>Est. MMXXVI</span>
+      </div>
+
+    </section>
+
+    <!-- CATÁLOGO DE EVENTOS -->
+    <section class="events-section section-wrap" id="eventos">
+
+      <div class="section-heading">
+        <div>
+          <p class="section-eyebrow">
+            <span aria-hidden="true">✧</span>
+            El tablón de anuncios
+          </p>
+
+          <h2>Aventuras <em>disponibles</em></h2>
+
+          <p class="section-description">
+            Cada encuentro es una historia esperando ser vivida.
+            ¿Cuál será la tuya?
+          </p>
         </div>
+
+        <div class="event-count-block" aria-label="Cantidad de eventos">
+          <span class="event-count" id="event-count">06</span>
+          <span>Eventos<br>en el reino</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+
+        <label class="search" for="event-search">
+          <span aria-hidden="true">⌕</span>
+          <input type="search" id="event-search"
+                 placeholder="Buscar una aventura..."
+                 autocomplete="off">
+        </label>
+
+        <div class="filters" aria-label="Filtrar eventos por categoría">
+          <button class="filter-chip active" type="button"
+                  data-category="Todos" aria-pressed="true">
+            Todos
+          </button>
+
+          <button class="filter-chip" type="button"
+                  data-category="Tecnología" aria-pressed="false">
+            Tecnología
+          </button>
+
+          <button class="filter-chip" type="button"
+                  data-category="Emprendimiento" aria-pressed="false">
+            Emprendimiento
+          </button>
+
+          <button class="filter-chip" type="button"
+                  data-category="Cultura" aria-pressed="false">
+            Cultura
+          </button>
+
+          <button class="filter-chip" type="button"
+                  data-category="Deportes" aria-pressed="false">
+            Deportes
+          </button>
+        </div>
+
+      </div>
+
+      <div class="events-grid" id="eventos-container"
+           aria-live="polite" aria-busy="true">
+        <p class="loading">Consultando los pergaminos del reino...</p>
+      </div>
+
+      <p class="catalogue-footer">
+        <span aria-hidden="true">✦</span>
+        El reino siempre guarda una nueva historia.
+        <span aria-hidden="true">✦</span>
+      </p>
+
+    </section>
+
+    <!-- NUESTRA ORDEN -->
+    <section class="manifesto section-wrap" id="nosotros">
+
+      <div class="manifesto-art" aria-hidden="true">
+        <div class="sigil-art">
+          <span class="sigil">E</span>
+          <span class="sigil-ornament">✧</span>
+        </div>
+      </div>
+
+      <div class="manifesto-content">
+
+        <p class="section-eyebrow">
+          <span aria-hidden="true">✧</span>
+          Nuestra orden
+        </p>
+
+        <h2>
+          No son solo eventos.<br>
+          Son historias por <em>vivir.</em>
+        </h2>
 
         <p>
-            Tu próxima experiencia comienza aquí.
+          EventPass reúne personas, ideas y experiencias en un solo lugar.
+          Encuentra tu próxima aventura, conoce gente y forma parte
+          de encuentros que dejan huella.
         </p>
 
-        <p class="copyright">
-            © 2026 EventPass. Todos los derechos reservados.
-        </p>
+        <div class="values">
 
-    </footer>
+          <article>
+            <span class="value-icon" aria-hidden="true">⚔</span>
+            <h3>Descubre</h3>
+            <p>Encuentra experiencias para todos los gustos.</p>
+          </article>
 
+          <article>
+            <span class="value-icon" aria-hidden="true">✧</span>
+            <h3>Conecta</h3>
+            <p>Comparte momentos con nuevas personas.</p>
+          </article>
 
-    <script src="js/app.js"></script>
+          <article>
+            <span class="value-icon" aria-hidden="true">♜</span>
+            <h3>Participa</h3>
+            <p>Haz que cada encuentro cuente.</p>
+          </article>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- LLAMADO FINAL -->
+    <section class="final-call section-wrap">
+
+      <p class="section-eyebrow">Tu historia comienza hoy</p>
+
+      <h2>Las puertas del reino <em>están abiertas.</em></h2>
+
+      <p>
+        La próxima aventura podría ser la que estabas esperando.
+      </p>
+
+      <button class="button gold large" type="button"
+              data-open-modal="register-modal">
+        Unirme a EventPass <span aria-hidden="true">→</span>
+      </button>
+
+    </section>
+
+  </main>
+
+  <!-- PIE DE PÁGINA -->
+  <footer class="site-footer">
+
+    <a class="brand footer-brand" href="#inicio"
+       aria-label="EventPass, volver al inicio">
+
+      <span class="crest" aria-hidden="true">
+        <svg viewBox="0 0 64 76" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 3 L57 12 L54 49 L32 72 L10 49 L7 12 Z"
+                fill="#17101d" stroke="#dca74e" stroke-width="1.5"/>
+          <path d="M32 9 L51 16 L48 45 L32 63 L16 45 L13 16 Z"
+                fill="none" stroke="#8c5d24" stroke-width="0.8"/>
+          <path d="M32 15 L32 57"
+                stroke="#8c5d24" stroke-width="0.7"/>
+          <text x="32" y="44" text-anchor="middle"
+                fill="#f5d58c" font-family="Cinzel, Georgia, serif"
+                font-size="31" font-weight="600">E</text>
+          <path d="M21 52 L32 59 L43 52"
+                fill="none" stroke="#dca74e" stroke-width="1"/>
+          <path d="M32 1 L35 5 L32 9 L29 5 Z"
+                fill="#f5d58c"/>
+        </svg>
+      </span>
+
+      <span class="brand-copy">
+        <span class="brand-name">Event<span>Pass</span></span>
+        <span class="brand-subtitle">Crónicas del Reino</span>
+      </span>
+
+    </a>
+
+    <p>Forjando encuentros, creando historias.</p>
+    <a href="#inicio">Volver al inicio ↑</a>
+    <span class="copyright">© 2026 EventPass</span>
+
+  </footer>
+
+  <!-- MODAL: DETALLE DEL EVENTO -->
+  <div class="modal-backdrop" id="event-modal" hidden>
+
+    <section class="modal event-modal" role="dialog" aria-modal="true"
+             aria-labelledby="event-modal-title">
+
+      <button class="close" type="button" data-close-modal
+              aria-label="Cerrar ventana">×</button>
+
+      <div id="event-modal-content"></div>
+
+    </section>
+
+  </div>
+
+  <!-- MODAL: INGRESO -->
+  <div class="modal-backdrop" id="login-modal" hidden>
+
+    <section class="modal account-modal" role="dialog" aria-modal="true"
+             aria-labelledby="login-title">
+
+      <button class="close" type="button" data-close-modal
+              aria-label="Cerrar ventana">×</button>
+
+      <!-- Escudo heráldico completo -->
+      <div class="modal-crest" aria-hidden="true">
+        <svg viewBox="0 0 64 76" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 3 L57 12 L54 49 L32 72 L10 49 L7 12 Z"
+                fill="#17101d" stroke="#dca74e" stroke-width="1.5"/>
+          <path d="M32 9 L51 16 L48 45 L32 63 L16 45 L13 16 Z"
+                fill="none" stroke="#8c5d24" stroke-width="0.8"/>
+          <path d="M32 15 L32 57"
+                stroke="#8c5d24" stroke-width="0.7"/>
+          <text x="32" y="44" text-anchor="middle"
+                fill="#f5d58c" font-family="Cinzel, Georgia, serif"
+                font-size="31" font-weight="600">E</text>
+          <path d="M21 52 L32 59 L43 52"
+                fill="none" stroke="#dca74e" stroke-width="1"/>
+          <path d="M32 1 L35 5 L32 9 L29 5 Z"
+                fill="#f5d58c"/>
+        </svg>
+      </div>
+
+      <p class="modal-kicker">Bienvenido de vuelta</p>
+
+      <h2 id="login-title">Regresa al <em>reino</em></h2>
+
+      <p class="modal-description">
+        Ingresa tus credenciales para continuar tu aventura.
+      </p>
+
+      <form id="login-form">
+
+        <label for="login-email">Correo electrónico</label>
+        <input id="login-email" name="email" type="email"
+               autocomplete="email" required
+               placeholder="tu@correo.com">
+
+        <label for="login-password">Contraseña</label>
+        <input id="login-password" name="password" type="password"
+               autocomplete="current-password" required
+               placeholder="Tu contraseña">
+
+        <button class="button gold full" type="submit">
+          Ingresar al reino
+        </button>
+
+      </form>
+
+      <p class="account-switch">
+        ¿Aún no tienes cuenta?
+        <button type="button" data-open-modal="register-modal">
+          Únete al reino
+        </button>
+      </p>
+
+    </section>
+
+  </div>
+
+  <!-- MODAL: REGISTRO -->
+  <div class="modal-backdrop" id="register-modal" hidden>
+
+    <section class="modal account-modal" role="dialog" aria-modal="true"
+             aria-labelledby="register-title">
+
+      <button class="close" type="button" data-close-modal
+              aria-label="Cerrar ventana">×</button>
+
+      <!-- Escudo heráldico completo -->
+      <div class="modal-crest" aria-hidden="true">
+        <svg viewBox="0 0 64 76" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 3 L57 12 L54 49 L32 72 L10 49 L7 12 Z"
+                fill="#17101d" stroke="#dca74e" stroke-width="1.5"/>
+          <path d="M32 9 L51 16 L48 45 L32 63 L16 45 L13 16 Z"
+                fill="none" stroke="#8c5d24" stroke-width="0.8"/>
+          <path d="M32 15 L32 57"
+                stroke="#8c5d24" stroke-width="0.7"/>
+          <text x="32" y="44" text-anchor="middle"
+                fill="#f5d58c" font-family="Cinzel, Georgia, serif"
+                font-size="31" font-weight="600">E</text>
+          <path d="M21 52 L32 59 L43 52"
+                fill="none" stroke="#dca74e" stroke-width="1"/>
+          <path d="M32 1 L35 5 L32 9 L29 5 Z"
+                fill="#f5d58c"/>
+        </svg>
+      </div>
+
+      <p class="modal-kicker">Tu aventura comienza aquí</p>
+
+      <h2 id="register-title">Únete al <em>reino</em></h2>
+
+      <p class="modal-description">
+        Crea tu cuenta y prepárate para descubrir nuevas experiencias.
+      </p>
+
+      <form id="register-form">
+
+        <label for="register-name">Nombre completo</label>
+        <input id="register-name" name="nombre" type="text"
+               autocomplete="name" required
+               placeholder="Tu nombre">
+
+        <label for="register-email">Correo electrónico</label>
+        <input id="register-email" name="email" type="email"
+               autocomplete="email" required
+               placeholder="tu@correo.com">
+
+        <label for="register-password">Contraseña</label>
+        <input id="register-password" name="password" type="password"
+               autocomplete="new-password" minlength="8" required
+               placeholder="Mínimo 8 caracteres">
+
+        <button class="button gold full" type="submit">
+          Crear mi cuenta
+        </button>
+
+      </form>
+
+      <p class="account-switch">
+        ¿Ya tienes una cuenta?
+        <button type="button" data-open-modal="login-modal">
+          Ingresar
+        </button>
+      </p>
+
+    </section>
+
+  </div>
+
+  <!-- NOTIFICACIÓN -->
+  <div class="toast" id="site-toast"
+       role="status" aria-live="polite"></div>
 
 </body>
-
 </html>
