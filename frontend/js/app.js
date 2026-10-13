@@ -732,14 +732,15 @@ function configurarRegistro() {
         method: "POST",
         body: JSON.stringify({
           nombre,
-          correo,
-          contrasena,
+          email: correo,
+          password: contrasena,
           accion: "crear"
         })
       });
 
       if (
         respuesta?.success === false ||
+        respuesta?.ok === false ||
         respuesta?.error
       ) {
         throw new Error(
@@ -809,9 +810,7 @@ function configurarInicioSesion() {
       const respuesta = await solicitarJSON(API_SESIONES, {
         method: "POST",
         body: JSON.stringify({
-          correo,
           email: correo,
-          contrasena,
           password: contrasena,
           accion: "login"
         })
@@ -819,6 +818,7 @@ function configurarInicioSesion() {
 
       if (
         respuesta?.success === false ||
+        respuesta?.ok === false ||
         respuesta?.error
       ) {
         throw new Error(
@@ -909,6 +909,7 @@ async function iniciarInscripcion() {
 
     if (
       respuesta?.success === false ||
+        respuesta?.ok === false ||
       respuesta?.error
     ) {
       throw new Error(

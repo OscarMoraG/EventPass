@@ -6,7 +6,9 @@
         "httpMethod": "POST",
         "path": "inscripciones",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://eventpass-frontend-theta.vercel.app"
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -70,7 +72,8 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -307,7 +310,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const inscripcion = $input.first().json;\n\nreturn [\n  {\n    json: {\n      ok: true,\n      mensaje:\n        inscripcion.estado === 'CONFIRMADA'\n          ? 'Inscripción confirmada correctamente'\n          : 'Evento lleno. Usuario agregado a la lista de espera',\n      inscripcion: {\n        inscripcion_id: inscripcion.inscripcion_id,\n        usuario_id: inscripcion.usuario_id,\n        evento_id: inscripcion.evento_id,\n        estado: inscripcion.estado,\n        orden_espera: inscripcion.orden_espera\n      }\n    }\n  }\n];"
+        "jsCode": "const inscripcion = $('WF06 - Validar evento y cupo').first().json;\n\nreturn [\n  {\n    json: {\n      ok: true,\n      mensaje:\n        inscripcion.estado === 'CONFIRMADA'\n          ? 'Inscripción confirmada correctamente'\n          : 'Evento lleno. Usuario agregado a la lista de espera',\n      inscripcion: {\n        inscripcion_id: inscripcion.inscripcion_id,\n        usuario_id: inscripcion.usuario_id,\n        evento_id: inscripcion.evento_id,\n        estado: inscripcion.estado,\n        orden_espera: inscripcion.orden_espera\n      }\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -357,7 +360,8 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -371,7 +375,7 @@
           "conditions": [
             {
               "id": "f8b2f265-f6e1-4a69-a40d-436acb185636",
-              "leftValue": "={{ String($json.estado || '').toUpperCase() === 'ACTIVA' && new Date($json.fecha_expiracion).getTime() > Date.now() }}",
+              "leftValue": "={{ String($json.estado || '').toUpperCase() === 'ACTIVA' && new Date($json.fecha_expiracion).getTime() > Date.now() && String($json.usuario_id || '') === $('WF06 - Preparar inscripción').first().json.usuario_id }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -500,7 +504,8 @@
         32
       ],
       "id": "5ccf956b-b00f-4f8c-a6f4-12ea2ebe5523",
-      "name": "WF06 - Enviar notificación"
+      "name": "WF06 - Enviar notificación",
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -553,6 +558,40 @@
       ],
       "id": "2f554b0a-5970-4702-814b-69aade13f3ca",
       "name": "WF06 - Responder HTTP duplicado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, mensaje: 'Tu sesión no es válida o expiró. Inicia sesión de nuevo.' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        -144
+      ],
+      "id": "c3000000-0000-4000-8000-000000000001",
+      "name": "WF06 - Responder sesión inválida"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, mensaje: 'El evento no existe o no está disponible para inscripción.' } }}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        32,
+        64
+      ],
+      "id": "c3000000-0000-4000-8000-000000000002",
+      "name": "WF06 - Responder evento no disponible"
     }
   ],
   "pinData": {},
@@ -654,7 +693,13 @@
             "index": 0
           }
         ],
-        []
+        [
+          {
+            "node": "WF06 - Responder sesión inválida",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "WF06 - Validar evento": {
@@ -662,6 +707,13 @@
         [
           {
             "node": "WF06 - Consultar inscripciones",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF06 - Responder evento no disponible",
             "type": "main",
             "index": 0
           }

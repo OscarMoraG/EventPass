@@ -3,16 +3,16 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "// Obtener los datos enviados por el Webhook\nconst body = $input.first().json.body;\n\n// Verificar que exista información\nif (!body) {\n  throw new Error('No se recibieron datos');\n}\n\n// Obtener y normalizar los datos\nconst accion = String(body.accion || '').trim().toLowerCase();\nconst nombre = String(body.nombre || '').trim();\nconst email = String(body.email || '').trim().toLowerCase();\nconst password = String(body.password || '');\n\n// Acciones permitidas\nconst accionesPermitidas = [\n  'crear',\n  'consultar',\n  'actualizar',\n  'desactivar'\n];\n\n// Validar acción\nif (!accionesPermitidas.includes(accion)) {\n  throw new Error(\n    'La acción debe ser: crear, consultar, actualizar o desactivar'\n  );\n}\n\n// Validar nombre\nif (['crear', 'actualizar'].includes(accion) && !nombre) {\n  throw new Error('El nombre es obligatorio');\n}\n\n// Validar email\nif (!email) {\n  throw new Error('El email es obligatorio');\n}\n\n// Validar formato básico del email\nif (!email.includes('@')) {\n  throw new Error('El email no tiene un formato válido');\n}\n\n// Validar contraseña para creación\nif (accion === 'crear' && password.length < 6) {\n  throw new Error('La contraseña debe tener mínimo 6 caracteres');\n}\n\n// Generar identificador solo cuando se crea un usuario\nconst usuario_id =\n  accion === 'crear'\n    ? 'USR-' +\n      Date.now() +\n      '-' +\n      Math.random().toString(36).substring(2, 8)\n    : String(body.usuario_id || '').trim();\n\n// Fecha actual\nconst fechaActual = new Date().toISOString();\n\n// Devolver información preparada\nreturn [\n  {\n    json: {\n      accion,\n      usuario_id,\n      nombre,\n      email_normalizado: email,\n      password,\n      estado: accion === 'desactivar' ? 'INACTIVO' : 'ACTIVO',\n      fecha_registro: fechaActual,\n      fecha_actualizacion: fechaActual,\n      validacion: 'OK'\n    }\n  }\n];"
+        "jsCode": "const body = $input.first().json.body || {};\n\nconst fallo = mensaje => [{ json: { valido: false, mensaje } }];\n\nconst accion = String(body.accion || '').trim().toLowerCase();\nconst nombre = String(body.nombre || '').trim();\nconst email = String(body.email || '').trim().toLowerCase();\nconst password = String(body.password || '');\n\nconst accionesPermitidas = ['crear', 'consultar', 'actualizar', 'desactivar'];\n\nif (!accionesPermitidas.includes(accion)) {\n  return fallo('La acción debe ser: crear, consultar, actualizar o desactivar.');\n}\nif (['crear', 'actualizar'].includes(accion) && !nombre) {\n  return fallo('El nombre es obligatorio.');\n}\nif (!email) {\n  return fallo('El correo electrónico es obligatorio.');\n}\nif (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {\n  return fallo('El correo electrónico no tiene un formato válido.');\n}\nif (accion === 'crear' && password.length < 6) {\n  return fallo('La contraseña debe tener mínimo 6 caracteres.');\n}\n\nconst usuario_id = accion === 'crear'\n  ? 'USR-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8)\n  : String(body.usuario_id || '').trim();\n\nconst fechaActual = new Date().toISOString();\n\nreturn [{\n  json: {\n    valido: true,\n    accion,\n    usuario_id,\n    nombre,\n    email_normalizado: email,\n    password,\n    estado: accion === 'desactivar' ? 'INACTIVO' : 'ACTIVO',\n    fecha_registro: fechaActual,\n    fecha_actualizacion: fechaActual\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -16,
-        -528
+        -780,
+        -500
       ],
       "id": "f0960252-7671-4bbb-bad7-a1bdfa8ce2ad",
-      "name": "Code in JavaScript"
+      "name": "WF01 - Validar solicitud"
     },
     {
       "parameters": {
@@ -34,14 +34,14 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "usuario_id": "={{ $('Code in JavaScript').first().json.usuario_id }}",
-            "nombre": "={{ $('Code in JavaScript').first().json.nombre }}",
-            "email_normalizado": "={{ $('Code in JavaScript').first().json.email_normalizado }}",
-            "password_hash": "={{ $('Crypto').first().json.password_hash }}",
-            "password_salt": "={{ $('Crypto1').first().json.password_salt }}",
-            "estado": "={{ $('Code in JavaScript').first().json.estado }}",
-            "fecha_registro": "={{ $('Code in JavaScript').first().json.fecha_registro }}",
-            "fecha_actualizacion": "={{ $('Code in JavaScript').first().json.fecha_actualizacion }}"
+            "usuario_id": "={{ $json.usuario_id }}",
+            "nombre": "={{ $json.nombre }}",
+            "email_normalizado": "={{ $json.email_normalizado }}",
+            "password_hash": "={{ $json.password_hash }}",
+            "password_salt": "={{ $json.password_salt }}",
+            "estado": "={{ $json.estado }}",
+            "fecha_registro": "={{ $json.fecha_registro }}",
+            "fecha_actualizacion": "={{ $json.fecha_actualizacion }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -126,8 +126,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        704,
-        -672
+        980,
+        -700
       ],
       "id": "b59e81c7-385c-4fef-95fe-b18cee8af17d",
       "name": "Append row in sheet",
@@ -140,14 +140,14 @@
     },
     {
       "parameters": {
-        "value": "{{ $json.password + $json.password_salt }}",
+        "value": "={{ $json.password + $json.password_salt }}",
         "dataPropertyName": "password_hash"
       },
       "type": "n8n-nodes-base.crypto",
       "typeVersion": 2,
       "position": [
-        528,
-        -672
+        760,
+        -700
       ],
       "id": "54755bf9-6f3c-4cb4-8458-a11ff53d02b1",
       "name": "Crypto"
@@ -160,8 +160,8 @@
       "type": "n8n-nodes-base.crypto",
       "typeVersion": 2,
       "position": [
-        336,
-        -672
+        540,
+        -700
       ],
       "id": "ccecb7cf-a92d-41cf-a887-fa23e8e4cddc",
       "name": "Crypto1"
@@ -268,8 +268,8 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        144,
-        -560
+        -340,
+        -500
       ],
       "id": "6569d095-393e-4a9c-891a-5d1512c56991",
       "name": "Switch"
@@ -303,8 +303,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        336,
-        -544
+        -120,
+        -480
       ],
       "id": "67e8928b-43a9-4387-afb2-884e3e4e2ccf",
       "name": "Get row(s) in sheet",
@@ -313,7 +313,8 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -335,11 +336,11 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "usuario_id": "={{ $('Code in JavaScript').first().json.usuario_id }}",
-            "nombre": "={{ $('Code in JavaScript').first().json.nombre }}",
-            "email_normalizado": "={{ $('Code in JavaScript').first().json.email_normalizado }}",
-            "estado": "={{ $('Code in JavaScript').first().json.estado }}",
-            "fecha_actualizacion": "={{ $('Code in JavaScript').first().json.fecha_actualizacion }}"
+            "usuario_id": "={{ $('WF01 - Validar solicitud').first().json.usuario_id }}",
+            "nombre": "={{ $('WF01 - Validar solicitud').first().json.nombre }}",
+            "email_normalizado": "={{ $('WF01 - Validar solicitud').first().json.email_normalizado }}",
+            "estado": "={{ $('WF01 - Validar solicitud').first().json.estado }}",
+            "fecha_actualizacion": "={{ $('WF01 - Validar solicitud').first().json.fecha_actualizacion }}"
           },
           "matchingColumns": [
             "usuario_id"
@@ -441,8 +442,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        336,
-        -384
+        -120,
+        -220
       ],
       "id": "99820edd-8170-4a90-8606-3667a0d36d36",
       "name": "Update row in sheet",
@@ -457,22 +458,255 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "usuarios",
-        "options": {}
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://eventpass-frontend-theta.vercel.app"
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -208,
-        -528
+        -1000,
+        -500
       ],
       "id": "8ac54677-70b2-4783-a973-8aaa5bc41566",
       "name": "WF01 - Usuarios",
       "webhookId": "d8f14009-0459-4457-9ded-800993d19fe7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1000000-0000-4000-8000-000000000001",
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -560,
+        -500
+      ],
+      "id": "a1000000-0000-4000-8000-000000000001-node",
+      "name": "WF01 - ¿Solicitud válida?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, mensaje: $json.mensaje } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -560,
+        -260
+      ],
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "WF01 - Responder error de validación"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1BLIj2BNzyVaiD4YijmRPOXbjzi8jPlz9DSqLPcHLfZg",
+          "mode": "list",
+          "cachedResultName": "EP01_Usuarios",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BLIj2BNzyVaiD4YijmRPOXbjzi8jPlz9DSqLPcHLfZg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Usuarios",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BLIj2BNzyVaiD4YijmRPOXbjzi8jPlz9DSqLPcHLfZg/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "email_normalizado",
+              "lookupValue": "={{ $json.email_normalizado }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -120,
+        -760
+      ],
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "WF01 - Buscar email existente",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('WF01 - Validar solicitud').first().json;\nconst existe = $input.all().some(item => item.json && item.json.usuario_id);\nreturn [{ json: { ...base, existe } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        100,
+        -760
+      ],
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "WF01 - Evaluar duplicado"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a1000000-0000-4000-8000-000000000005",
+              "leftValue": "={{ $json.existe }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        320,
+        -760
+      ],
+      "id": "a1000000-0000-4000-8000-000000000005-node",
+      "name": "WF01 - ¿Correo ya registrado?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, mensaje: 'Ya existe una cuenta registrada con ese correo.' } }}",
+        "options": {
+          "responseCode": 409
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        540,
+        -900
+      ],
+      "id": "a1000000-0000-4000-8000-000000000006",
+      "name": "WF01 - Responder correo duplicado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, mensaje: 'Usuario creado correctamente.', usuario_id: $('WF01 - Evaluar duplicado').first().json.usuario_id, nombre: $('WF01 - Evaluar duplicado').first().json.nombre, email: $('WF01 - Evaluar duplicado').first().json.email_normalizado } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1200,
+        -700
+      ],
+      "id": "a1000000-0000-4000-8000-000000000007",
+      "name": "WF01 - Responder usuario creado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: !!$json.usuario_id, mensaje: $json.usuario_id ? 'Usuario encontrado.' : 'Usuario no encontrado.', usuario_id: $json.usuario_id, nombre: $json.nombre, email: $json.email_normalizado, estado: $json.estado } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        100,
+        -480
+      ],
+      "id": "a1000000-0000-4000-8000-000000000008",
+      "name": "WF01 - Responder consulta"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, mensaje: 'Usuario actualizado correctamente.', usuario_id: $('WF01 - Validar solicitud').first().json.usuario_id, estado: $('WF01 - Validar solicitud').first().json.estado } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        100,
+        -220
+      ],
+      "id": "a1000000-0000-4000-8000-000000000009",
+      "name": "WF01 - Responder actualización"
     }
   ],
   "pinData": {},
   "connections": {
-    "Code in JavaScript": {
+    "WF01 - Usuarios": {
+      "main": [
+        [
+          {
+            "node": "WF01 - Validar solicitud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 - Validar solicitud": {
+      "main": [
+        [
+          {
+            "node": "WF01 - ¿Solicitud válida?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 - ¿Solicitud válida?": {
       "main": [
         [
           {
@@ -480,35 +714,10 @@
             "type": "main",
             "index": 0
           }
-        ]
-      ]
-    },
-    "Append row in sheet": {
-      "main": [
-        []
-      ]
-    },
-    "Crypto": {
-      "main": [
+        ],
         [
           {
-            "node": "Append row in sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Crypto1": {
-      "main": [
-        [
-          {
-            "node": "Append row in sheet",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Crypto",
+            "node": "WF01 - Responder error de validación",
             "type": "main",
             "index": 0
           }
@@ -519,7 +728,7 @@
       "main": [
         [
           {
-            "node": "Crypto1",
+            "node": "WF01 - Buscar email existente",
             "type": "main",
             "index": 0
           }
@@ -547,11 +756,95 @@
         ]
       ]
     },
-    "WF01 - Usuarios": {
+    "WF01 - Buscar email existente": {
       "main": [
         [
           {
-            "node": "Code in JavaScript",
+            "node": "WF01 - Evaluar duplicado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 - Evaluar duplicado": {
+      "main": [
+        [
+          {
+            "node": "WF01 - ¿Correo ya registrado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF01 - ¿Correo ya registrado?": {
+      "main": [
+        [
+          {
+            "node": "WF01 - Responder correo duplicado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Crypto1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crypto1": {
+      "main": [
+        [
+          {
+            "node": "Crypto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crypto": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "WF01 - Responder usuario creado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "WF01 - Responder consulta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "WF01 - Responder actualización",
             "type": "main",
             "index": 0
           }
