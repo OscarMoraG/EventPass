@@ -3,9 +3,12 @@
   "nodes": [
     {
       "parameters": {
+        "httpMethod": "GET",
         "path": "catalogo",
-        "responseMode": "lastNode",
-        "options": {}
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://eventpass-frontend-theta.vercel.app"
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -52,7 +55,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const datos = $input.all();\n\nconst eventos = datos\n  .map(item => item.json)\n  .filter(item => item.evento_id && item.nombre);\n\nconst inscripciones = datos\n  .map(item => item.json)\n  .filter(item => item.inscripcion_id && item.usuario_id);\n\nconst consulta = $('WF05 - Catálogo público').first().json;\nconst query = consulta.query || {};\n\nconst evento_id = String(query.evento_id || '').trim();\nconst categoria = String(query.categoria || '').trim().toLowerCase();\n\nlet resultado = [];\n\nfor (const evento of eventos) {\n  if (String(evento.estado || '').toUpperCase() !== 'PUBLICADO') {\n    continue;\n  }\n\n  if (evento_id && String(evento.evento_id) !== evento_id) {\n    continue;\n  }\n\n  if (\n    categoria &&\n    String(evento.categoria || '').toLowerCase() !== categoria\n  ) {\n    continue;\n  }\n\n  const confirmadas = inscripciones.filter(inscripcion =>\n    String(inscripcion.evento_id) === String(evento.evento_id) &&\n    String(inscripcion.estado || '').toUpperCase() === 'CONFIRMADA'\n  ).length;\n\n  const capacidad = Number(evento.capacidad || 0);\n  const disponibles = Math.max(capacidad - confirmadas, 0);\n\n  resultado.push({\n    json: {\n      ...evento,\n      cupos_confirmados: confirmadas,\n      cupos_disponibles: disponibles\n    }\n  });\n}\n\nreturn resultado;"
+        "jsCode": "const datos = $input.all().map(item => item.json);\n\nconst eventos = datos.filter(item => item.evento_id && item.nombre);\nconst inscripciones = datos.filter(item => item.inscripcion_id && item.usuario_id);\n\nconst consulta = $('WF05 - Catálogo público').first().json;\nconst query = consulta.query || {};\n\nconst evento_id = String(query.evento_id || '').trim();\nconst categoria = String(query.categoria || '').trim().toLowerCase();\n\nconst lista = [];\n\nfor (const evento of eventos) {\n  if (String(evento.estado || '').trim().toUpperCase() !== 'PUBLICADO') continue;\n  if (evento_id && String(evento.evento_id) !== evento_id) continue;\n  if (categoria && String(evento.categoria || '').trim().toLowerCase() !== categoria) continue;\n\n  const confirmadas = inscripciones.filter(i =>\n    String(i.evento_id) === String(evento.evento_id) &&\n    String(i.estado || '').trim().toUpperCase() === 'CONFIRMADA'\n  ).length;\n\n  const capacidad = Number(evento.capacidad || 0);\n\n  lista.push({\n    ...evento,\n    cupos_confirmados: confirmadas,\n    cupos_disponibles: Math.max(capacidad - confirmadas, 0)\n  });\n}\n\n// Siempre devuelve exactamente 1 ítem, incluso si la lista está vacía.\nreturn [{ json: { ok: true, total: lista.length, eventos: lista } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -189,7 +192,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const eventos = $input.all();\n\nconst consulta = $('WF05 - Catálogo público').first().json;\nconst query = consulta.query || {};\n\nconst evento_id = String(query.evento_id || '').trim();\nconst categoria = String(query.categoria || '').trim();\n\nlet tipo = 'LISTADO';\n\nif (evento_id) {\n  tipo = 'DETALLE';\n} else if (categoria) {\n  tipo = 'FILTRO';\n}\n\nconst resultado_count = eventos.length;\n\nconst consulta_id =\n  'CON-' +\n  Date.now() +\n  '-' +\n  Math.random().toString(36).substring(2, 8);\n\nreturn [{\n  json: {\n    consulta_id,\n    fecha: new Date().toISOString(),\n    tipo,\n    evento_id,\n    categoria,\n    resultado_count,\n    visitor_id: '',\n    status_http: 200\n  }\n}];"
+        "jsCode": "\nconst consulta = $('WF05 - Catálogo público').first().json;\nconst query = consulta.query || {};\n\nconst evento_id = String(query.evento_id || '').trim();\nconst categoria = String(query.categoria || '').trim();\n\nlet tipo = 'LISTADO';\n\nif (evento_id) {\n  tipo = 'DETALLE';\n} else if (categoria) {\n  tipo = 'FILTRO';\n}\n\nconst resultado_count = $input.first().json.total;\n\nconst consulta_id =\n  'CON-' +\n  Date.now() +\n  '-' +\n  Math.random().toString(36).substring(2, 8);\n\nreturn [{\n  json: {\n    consulta_id,\n    fecha: new Date().toISOString(),\n    tipo,\n    evento_id,\n    categoria,\n    resultado_count,\n    visitor_id: '',\n    status_http: 200\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -202,7 +205,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Recuperar los eventos publicados\nconst eventos = $('WF05 - Filtrar publicados').all();\n\nreturn eventos;"
+        "jsCode": "// Lee del nodo Filtrar (no del log) para que la respuesta no dependa de Google Sheets del log.\nconst f = $('WF05 - Filtrar publicados').first().json;\nreturn [{ json: { ok: true, total: f.total, eventos: f.eventos } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -211,7 +214,7 @@
         -800
       ],
       "id": "2fb8125c-0f02-4e15-8a2c-be2af631f6da",
-      "name": "Code in JavaScript"
+      "name": "WF05 - Preparar respuesta"
     },
     {
       "parameters": {
@@ -244,7 +247,8 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -256,6 +260,23 @@
       ],
       "id": "4e8b9032-3628-4e1a-a18f-8baf1c165f2c",
       "name": "Merge"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        944,
+        -800
+      ],
+      "id": "b7c1d2e3-4f5a-4b6c-8d7e-9a0b1c2d3e4f",
+      "name": "WF05 - Responder catálogo"
     }
   ],
   "pinData": {},
@@ -313,7 +334,7 @@
       "main": [
         [
           {
-            "node": "Code in JavaScript",
+            "node": "WF05 - Preparar respuesta",
             "type": "main",
             "index": 0
           }
@@ -336,6 +357,17 @@
         [
           {
             "node": "WF05 - Filtrar publicados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF05 - Preparar respuesta": {
+      "main": [
+        [
+          {
+            "node": "WF05 - Responder catálogo",
             "type": "main",
             "index": 0
           }

@@ -1,4 +1,3 @@
-
 "use strict";
 
 /* =========================================================
@@ -10,17 +9,17 @@
 /*
  * IMPORTANTE:
  * FRONTEND_URL es la dirección pública de Vercel.
- * N8N_BASE_URL debe ser la dirección accesible de n8n.
+ * N8N_BASE_URL es la dirección pública (túnel HTTPS) de n8n.
  *
- * localhost solo funciona en el computador donde se ejecuta
- * n8n. Para que funcione desde otros dispositivos, reemplaza
- * N8N_BASE_URL por la URL HTTPS pública de tu instancia n8n.
+ * La dirección trycloudflare.com cambia cada vez que se reinicia
+ * el túnel. Si cambia, solo hay que actualizar N8N_BASE_URL,
+ * hacer commit y push.
  */
 
 const FRONTEND_URL =
   "https://eventpass-frontend-theta.vercel.app";
 
-const N8N_BASE_URL = "http://localhost:5678";
+const N8N_BASE_URL = "https://ladies-audio-olympus-beverly.trycloudflare.com";
 
 const API_CATALOGO = `${N8N_BASE_URL}/webhook/catalogo`;
 const API_USUARIOS = `${N8N_BASE_URL}/webhook/usuarios`;
@@ -148,32 +147,13 @@ async function solicitarJSON(url, opciones = {}) {
 /* ---------- NORMALIZACIÓN DE RESPUESTAS ---------- */
 
 function extraerListaEventos(datos) {
-  if (Array.isArray(datos)) {
-    return datos;
-  }
-
-  if (Array.isArray(datos?.data)) {
-    return datos.data;
-  }
-
-  if (Array.isArray(datos?.eventos)) {
-    return datos.eventos;
-  }
-
-  if (Array.isArray(datos?.body)) {
-    return datos.body;
-  }
-
-  if (Array.isArray(datos?.items)) {
-    return datos.items;
-  }
-
   /*
-   * Algunos nodos Respond to Webhook devuelven un único objeto.
-   * Se admite ese formato, pero no se inventan eventos.
+   * Contrato de WF05:
+   * { "ok": true, "total": N, "eventos": [ ... ] }
+   * Cualquier otro formato se trata como error.
    */
-  if (datos && typeof datos === "object" && datos.evento_id) {
-    return [datos];
+  if (datos && datos.ok === true && Array.isArray(datos.eventos)) {
+    return datos.eventos;
   }
 
   return null;
@@ -302,7 +282,7 @@ async function cargarEventos() {
 
     if (!lista) {
       throw new Error(
-        "WF05 no devolvió una lista de eventos reconocible."
+        "WF05 no devolvió el formato esperado {ok, total, eventos}."
       );
     }
 
