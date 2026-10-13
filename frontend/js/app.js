@@ -40,7 +40,7 @@ const IMAGENES_EVENTOS = {
     "./assets/carrera-deportiva-eventpass.png",
 
   "taller de innovacion":
-    "./assets/taller-de-innovacion.png",
+    "./assets/taller-de-innov    acion.png",
 
   "encuentro cultural eventpass":
     "./assets/encuentro-cultural-eventpass.png"
