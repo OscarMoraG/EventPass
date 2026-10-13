@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#17121c">
+  <meta
+    name="description"
+    content="Política de privacidad de EventPass, proyecto académico de gestión de eventos."
+  >
+
+  <title>Política de privacidad | EventPass</title>
+
+  <link rel="stylesheet" href="./css/styles.css">
+
+  <style>
+    .privacy-page {
+      width: min(820px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 56px 0 72px;
+    }
+
+    .privacy-page .back-link {
+      display: inline-block;
+      margin-bottom: 28px;
+      color: var(--gold-light);
+      text-decoration: none;
+    }
+
+    .privacy-page .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .privacy-page h1 {
+      margin: 0 0 8px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      color: var(--text);
+    }
+
+    .privacy-page h2 {
+      margin: 36px 0 10px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.35rem;
+      color: var(--gold-light);
+    }
+
+    .privacy-page p,
+    .privacy-page li {
+      color: var(--text-soft);
+      line-height: 1.7;
+    }
+
+    .privacy-page ul {
+      padding-left: 22px;
+    }
+
+    .privacy-page .updated {
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    .privacy-page a {
+      color: var(--gold-light);
+    }
+  </style>
+</head>
+
+<body>
+  <main class="privacy-page">
+    <a class="back-link" href="./index.html">← Volver a EventPass</a>
+
+    <h1>Política de privacidad</h1>
+    <p class="updated">Última actualización: 13 de octubre de 2026</p>
+
+    <p>
+      EventPass es un proyecto académico desarrollado por Oscar Mora para el
+      programa de automatización con n8n de Campuslands. Esta página explica
+      qué datos se usan en la aplicación y para qué.
+    </p>
+
+    <h2>Datos que se recopilan</h2>
+    <ul>
+      <li>Nombre y correo electrónico, cuando una persona se registra.</li>
+      <li>
+        Contraseña: no se guarda en texto plano. Se almacena únicamente un
+        resultado cifrado (hash con sal).
+      </li>
+      <li>
+        Datos de sesión (identificador, fecha de inicio y de expiración) cuando
+        la persona inicia sesión.
+      </li>
+      <li>
+        Datos de las inscripciones a eventos: evento elegido, estado de la
+        inscripción y fecha.
+      </li>
+    </ul>
+
+    <h2>Para qué se usan</h2>
+    <ul>
+      <li>Crear la cuenta y permitir iniciar sesión.</li>
+      <li>Registrar inscripciones y controlar los cupos de cada evento.</li>
+      <li>
+        Enviar correos de notificación relacionados con la inscripción, por
+        ejemplo la confirmación.
+      </li>
+    </ul>
+
+    <h2>Dónde se almacenan</h2>
+    <p>
+      Los datos se guardan en hojas de cálculo de Google Sheets y se procesan
+      mediante flujos de automatización de n8n. El sitio web se publica en
+      Vercel.
+    </p>
+
+    <h2>Uso de los servicios de Google</h2>
+    <p>
+      EventPass usa Google Sheets para almacenar datos y Gmail únicamente para
+      enviar correos de notificación desde la cuenta del proyecto. La
+      aplicación no lee, no busca y no analiza el contenido de las bandejas de
+      correo de las personas que la usan. La información obtenida mediante los
+      servicios de Google se usa solo para el funcionamiento descrito en esta
+      página.
+    </p>
+
+    <h2>Con quién se comparten</h2>
+    <p>
+      Los datos no se venden ni se comparten con terceros con fines
+      comerciales. Solo los procesan los servicios técnicos mencionados arriba
+      (Google, n8n y Vercel) para que la aplicación funcione.
+    </p>
+
+    <h2>Conservación y eliminación</h2>
+    <p>
+      Los datos se conservan mientras dure el proyecto académico. Cualquier
+      persona puede pedir que se elimine su información escribiendo al correo
+      de contacto.
+    </p>
+
+    <h2>Contacto</h2>
+    <p>
+      Para preguntas sobre esta política o para solicitar la eliminación de
+      datos:
+      <a href="mailto:oscarmmorag@gmail.com">oscarmmorag@gmail.com</a>.
+    </p>
+  </main>
+</body>
+</html>
