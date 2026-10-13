@@ -264,6 +264,7 @@ async function solicitarJSON(url, opciones = {}) {
 }
 
 
+/* 
 /* 6. CARGAR EL CATÁLOGO */
 
 async function cargarEventos() {
@@ -287,7 +288,9 @@ async function cargarEventos() {
           ? datos.eventos
           : Array.isArray(datos?.body)
             ? datos.body
-            : null;
+            : datos && typeof datos === "object" && datos.evento_id
+              ? [datos]
+              : null;
 
     if (!lista) {
       throw new Error(
@@ -295,7 +298,6 @@ async function cargarEventos() {
       );
     }
 
-    // Solo mostramos los seis eventos aprobados para el frontend.
     const nombresPermitidos = new Set(
       EVENTOS_DEMO.map(evento => normalizarTexto(evento.nombre))
     );
