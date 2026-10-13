@@ -237,6 +237,11 @@ function obtenerCupos(evento) {
   return Number.isFinite(numero) ? numero : null;
 }
 
+function esEventoPasado(evento) {
+  /* WF05 calcula evento_pasado a partir de la fecha del evento. */
+  return evento?.evento_pasado === true;
+}
+
 function obtenerImagenEvento(evento) {
   const clave = normalizarTexto(obtenerNombreEvento(evento));
 
@@ -421,14 +426,20 @@ function renderizarEventos() {
         >✦</div>
       `;
 
-    const cuposHTML = cupos !== null
+    const cuposHTML = esEventoPasado(evento)
       ? `
+        <p class="event-spots">
+          <strong>Evento cerrado</strong>
+        </p>
+      `
+      : cupos !== null
+        ? `
         <p class="event-spots">
           <strong>Cupos disponibles:</strong>
           <span>${escaparHTML(cupos)}</span>
         </p>
       `
-      : "";
+        : "";
 
     return `
       <article class="event-card">
@@ -540,9 +551,13 @@ function abrirDetalleEvento(evento) {
     `
     : "";
 
-  const cuposHTML = cupos !== null
-    ? `<p><strong>Cupos disponibles:</strong> ${escaparHTML(cupos)}</p>`
-    : "";
+  const eventoCerrado = esEventoPasado(evento);
+
+  const cuposHTML = eventoCerrado
+    ? `<p><strong>Estado:</strong> Evento cerrado</p>`
+    : cupos !== null
+      ? `<p><strong>Cupos disponibles:</strong> ${escaparHTML(cupos)}</p>`
+      : "";
 
   contenido.innerHTML = `
     <div class="event-detail-content">
@@ -565,8 +580,9 @@ function abrirDetalleEvento(evento) {
         type="button"
         class="btn-primary"
         id="btn-inscribirse-evento"
+        ${eventoCerrado ? "disabled" : ""}
       >
-        Inscribirme
+        ${eventoCerrado ? "Evento cerrado" : "Inscribirme"}
       </button>
     </div>
   `;
@@ -877,6 +893,11 @@ async function iniciarInscripcion() {
       document.body.classList.add("modal-open");
     }
 
+    return;
+  }
+
+  if (esEventoPasado(eventoSeleccionado)) {
+    mostrarAviso("Este evento ya está cerrado.", "error");
     return;
   }
 

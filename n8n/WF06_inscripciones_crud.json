@@ -409,7 +409,7 @@
           "conditions": [
             {
               "id": "781f5a01-2bb3-42eb-bfdc-0ea1674b203d",
-              "leftValue": "={{ String($json.estado || '').toUpperCase() === 'PUBLICADO' && Number($json.capacidad || 0) > 0 }}",
+              "leftValue": "={{ String($json.estado || '').toUpperCase() === 'PUBLICADO' && Number($json.capacidad || 0) > 0 && !(/^\\d{4}-\\d{2}-\\d{2}$/.test(String($json.fecha || '').slice(0, 10)) && String($json.fecha).slice(0, 10) < new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10)) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -579,7 +579,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { ok: false, mensaje: 'El evento no existe o no está disponible para inscripción.' } }}",
+        "responseBody": "={{ { ok: false, mensaje: 'El evento no existe, ya finalizó o no está disponible para inscripción.' } }}",
         "options": {
           "responseCode": 404
         }
