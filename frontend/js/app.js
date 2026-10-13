@@ -829,6 +829,7 @@ function configurarInicioSesion() {
       }
 
       sesionActual = respuesta;
+      actualizarEncabezadoSesion();
 
       mostrarAviso(
         respuesta?.mensaje ||
@@ -940,6 +941,48 @@ async function iniciarInscripcion() {
   } finally {
     if (boton) boton.disabled = false;
   }
+}
+
+/* ---------- ENCABEZADO SEGÚN LA SESIÓN ---------- */
+
+function actualizarEncabezadoSesion() {
+  const entrar = document.querySelector(".btn-nav-login");
+  const registro = document.querySelector(".btn-nav-register");
+
+  if (!entrar) return;
+
+  let salir = obtenerElemento("btn-nav-logout");
+
+  if (sesionActual) {
+    const nombre = String(sesionActual.nombre || "")
+      .trim()
+      .split(/\s+/)[0];
+
+    if (!salir) {
+      salir = document.createElement("button");
+      salir.type = "button";
+      salir.id = "btn-nav-logout";
+      salir.className = "btn-nav-login";
+      salir.addEventListener("click", cerrarSesion);
+      entrar.after(salir);
+    }
+
+    salir.textContent = nombre ? `Salir (${nombre})` : "Salir";
+    entrar.style.display = "none";
+
+    if (registro) registro.style.display = "none";
+  } else {
+    salir?.remove();
+    entrar.style.display = "";
+
+    if (registro) registro.style.display = "";
+  }
+}
+
+function cerrarSesion() {
+  sesionActual = null;
+  actualizarEncabezadoSesion();
+  mostrarAviso("Sesión cerrada.", "info");
 }
 
 /* ---------- NAVEGACIÓN ENTRE MODALES ---------- */
