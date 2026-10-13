@@ -1,30 +1,33 @@
 
+"use strict";
+
 /* =========================================================
-   EVENTPASS — CRÓNICAS DEL REINO
-   Catálogo, imágenes, filtros, modales y conexión con n8n
+   EVENTPASS
+   Frontend: https://eventpass-frontend-theta.vercel.app/
+   Backend: n8n + Google Sheets
    ========================================================= */
 
-/* 1. CONFIGURACIÓN DE N8N */
+/*
+ * IMPORTANTE:
+ * FRONTEND_URL es la dirección pública de Vercel.
+ * N8N_BASE_URL debe ser la dirección accesible de n8n.
+ *
+ * localhost solo funciona en el computador donde se ejecuta
+ * n8n. Para que funcione desde otros dispositivos, reemplaza
+ * N8N_BASE_URL por la URL HTTPS pública de tu instancia n8n.
+ */
 
-// IMPORTANTE:
-// Esta dirección funciona únicamente desde el equipo donde
-// se ejecuta n8n. Para producción necesitaremos una URL pública.
+const FRONTEND_URL =
+  "https://eventpass-frontend-theta.vercel.app";
+
 const N8N_BASE_URL = "http://localhost:5678";
 
-// Endpoints de producción identificados en n8n.
 const API_CATALOGO = `${N8N_BASE_URL}/webhook/catalogo`;
 const API_USUARIOS = `${N8N_BASE_URL}/webhook/usuarios`;
 const API_SESIONES = `${N8N_BASE_URL}/webhook/sesiones`;
-const API_TELEGRAM = `${N8N_BASE_URL}/webhook/telegram`;
 const API_INSCRIPCIONES = `${N8N_BASE_URL}/webhook/inscripciones`;
-const API_CHECKIN = `${N8N_BASE_URL}/webhook/checkin`;
 
-// No agregamos WF07, WF08, WF09 ni WF10 a esta lista de
-// endpoints REST: según la información disponible, no tienen
-// un webhook propio para invocarlos de esta manera.
-
-
-/* 2. IMÁGENES DE LOS SEIS EVENTOS */
+/* ---------- IMÁGENES DE LOS EVENTOS ---------- */
 
 const IMAGENES_EVENTOS = {
   "festival de tecnologia bucaramanga":
@@ -40,104 +43,37 @@ const IMAGENES_EVENTOS = {
     "./assets/carrera-deportiva-eventpass.png",
 
   "taller de innovacion":
-    "./assets/taller-de-innov    acion.png",
+    "./assets/taller-de-innovacion.png",
 
   "encuentro cultural eventpass":
     "./assets/encuentro-cultural-eventpass.png"
 };
 
-
-/* 3. CATÁLOGO DE DEMOSTRACIÓN */
-
-const EVENTOS_DEMO = [
-  {
-    nombre: "Festival de Tecnología Bucaramanga",
-    categoria: "Tecnología",
-    descripcion:
-      "Un encuentro dedicado a la tecnología, la creatividad y la innovación.",
-    fecha: "",
-    hora: "",
-    lugar: "",
-    cupos_disponibles: null
-  },
-  {
-    nombre: "Feria de Emprendimiento Santander",
-    categoria: "Emprendimiento",
-    descripcion:
-      "Una feria para descubrir ideas, proyectos y nuevas oportunidades.",
-    fecha: "",
-    hora: "",
-    lugar: "",
-    cupos_disponibles: null
-  },
-  {
-    nombre: "Festival Cultural Bucaramanga",
-    categoria: "Cultura",
-    descripcion:
-      "Música, arte y expresiones culturales para toda la comunidad.",
-    fecha: "",
-    hora: "",
-    lugar: "",
-    cupos_disponibles: null
-  },
-  {
-    nombre: "Carrera Deportiva EventPass",
-    categoria: "Deportes",
-    descripcion:
-      "Una experiencia deportiva y recreativa para compartir en comunidad.",
-    fecha: "",
-    hora: "",
-    lugar: "",
-    cupos_disponibles: null
-  },
-  {
-    nombre: "Taller de Innovación",
-    categoria: "Tecnología",
-    descripcion:
-      "Un taller práctico para explorar nuevas ideas y tecnologías.",
-    fecha: "",
-    hora: "",
-    lugar: "",
-    cupos_disponibles: null
-  },
-  {
-    nombre: "Encuentro Cultural EventPass",
-    categoria: "Cultura",
-    descripcion:
-      "Un encuentro con música, arte y actividades culturales.",
-    fecha: "",
-    hora: "",
-    lugar: "",
-    cupos_disponibles: null
-  }
-];
-
-
-/* 4. ESTADO DE LA APLICACIÓN */
+/* ---------- ESTADO DE LA APLICACIÓN ---------- */
 
 let eventosActuales = [];
 let eventoSeleccionado = null;
-let modoDemostracion = false;
 let categoriaActual = "Todos";
 let busquedaActual = "";
+let sesionActual = null;
+let catalogoCargado = false;
 
-
-/* 5. FUNCIONES AUXILIARES */
+/* ---------- UTILIDADES ---------- */
 
 function obtenerElemento(id) {
   return document.getElementById(id);
 }
 
-function normalizarTexto(texto = "") {
-  return String(texto)
+function normalizarTexto(valor) {
+  return String(valor ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .trim();
 }
 
-function escaparHTML(valor = "") {
-  return String(valor).replace(/[&<>"']/g, caracter => {
+function escaparHTML(valor) {
+  return String(valor ?? "").replace(/[&<>"']/g, caracter => {
     const entidades = {
       "&": "&amp;",
       "<": "&lt;",
@@ -150,82 +86,25 @@ function escaparHTML(valor = "") {
   });
 }
 
-function mostrarAviso(mensaje, duracion = 4000) {
-  const aviso = obtenerElemento("site-toast");
+function mostrarAviso(mensaje, tipo = "info") {
+  let aviso = obtenerElemento("site-toast");
 
   if (!aviso) {
-    console.info(mensaje);
-    return;
+    aviso = document.createElement("div");
+    aviso.id = "site-toast";
+    aviso.className = "site-toast";
+    aviso.setAttribute("role", "status");
+    aviso.setAttribute("aria-live", "polite");
+    document.body.appendChild(aviso);
   }
 
   aviso.textContent = mensaje;
-  aviso.classList.add("show");
-
-  window.clearTimeout(mostrarAviso.temporizador);
-
-  mostrarAviso.temporizador = window.setTimeout(() => {
-    aviso.classList.remove("show");
-  }, duracion);
+  aviso.dataset.type = tipo;
+  aviso.classList.add("visible");
 }
 
-function obtenerCategoria(evento) {
-  const nombre = normalizarTexto(evento.nombre || "");
-  const categoria = normalizarTexto(evento.categoria || "");
-
-  if (
-    nombre.includes("tecnologia") ||
-    nombre.includes("innovacion")
-  ) {
-    return "Tecnología";
-  }
-
-  if (
-    nombre.includes("emprendimiento") ||
-    categoria.includes("emprendimiento")
-  ) {
-    return "Emprendimiento";
-  }
-
-  if (
-    nombre.includes("deportiva") ||
-    categoria.includes("deporte")
-  ) {
-    return "Deportes";
-  }
-
-  if (
-    nombre.includes("cultural") ||
-    categoria.includes("cultura")
-  ) {
-    return "Cultura";
-  }
-
-  if (categoria.includes("tecnologia")) {
-    return "Tecnología";
-  }
-
-  return evento.categoria || "Otros";
-}
-
-function obtenerImagenEvento(evento) {
-  const nombre = normalizarTexto(evento.nombre || "");
-  return IMAGENES_EVENTOS[nombre] || "";
-}
-
-function obtenerDescripcion(evento) {
-  return evento.descripcion || "Próximamente encontrarás más información sobre este evento.";
-}
-
-function obtenerFecha(evento) {
-  if (!evento.fecha) return "Fecha por confirmar";
-
-  return evento.hora
-    ? `${evento.fecha} · ${evento.hora}`
-    : evento.fecha;
-}
-
-function obtenerLugar(evento) {
-  return evento.lugar || "Lugar por confirmar";
+function ocultarAviso() {
+  obtenerElemento("site-toast")?.classList.remove("visible");
 }
 
 async function solicitarJSON(url, opciones = {}) {
@@ -241,21 +120,24 @@ async function solicitarJSON(url, opciones = {}) {
   });
 
   const texto = await respuesta.text();
+
   let datos = null;
 
-  if (texto) {
+  if (texto.trim()) {
     try {
       datos = JSON.parse(texto);
     } catch {
-      datos = { mensaje: texto };
+      throw new Error(
+        "El servidor respondió con un formato que no es JSON."
+      );
     }
   }
 
   if (!respuesta.ok) {
     const mensaje =
-      datos?.mensaje ||
       datos?.message ||
-      `La solicitud falló con el estado HTTP ${respuesta.status}.`;
+      datos?.mensaje ||
+      `El servidor respondió con el estado ${respuesta.status}.`;
 
     throw new Error(mensaje);
   }
@@ -263,129 +145,310 @@ async function solicitarJSON(url, opciones = {}) {
   return datos;
 }
 
+/* ---------- NORMALIZACIÓN DE RESPUESTAS ---------- */
 
-/* 
-/* 6. CARGAR EL CATÁLOGO */
+function extraerListaEventos(datos) {
+  if (Array.isArray(datos)) {
+    return datos;
+  }
+
+  if (Array.isArray(datos?.data)) {
+    return datos.data;
+  }
+
+  if (Array.isArray(datos?.eventos)) {
+    return datos.eventos;
+  }
+
+  if (Array.isArray(datos?.body)) {
+    return datos.body;
+  }
+
+  if (Array.isArray(datos?.items)) {
+    return datos.items;
+  }
+
+  /*
+   * Algunos nodos Respond to Webhook devuelven un único objeto.
+   * Se admite ese formato, pero no se inventan eventos.
+   */
+  if (datos && typeof datos === "object" && datos.evento_id) {
+    return [datos];
+  }
+
+  return null;
+}
+
+/* ---------- DATOS DE CADA EVENTO ---------- */
+
+function obtenerNombreEvento(evento) {
+  return evento?.nombre || "Evento EventPass";
+}
+
+function obtenerCategoria(evento) {
+  return (
+    evento?.categoria ||
+    evento?.["categoría"] ||
+    evento?.categorias ||
+    "General"
+  );
+}
+
+function obtenerDescripcion(evento) {
+  return (
+    evento?.descripcion ||
+    evento?.["descripción"] ||
+    "Consulta los detalles de este evento."
+  );
+}
+
+function obtenerLugar(evento) {
+  return evento?.lugar || "Lugar por confirmar";
+}
+
+function obtenerFecha(evento) {
+  if (!evento?.fecha) {
+    return "Fecha por confirmar";
+  }
+
+  /*
+   * Evita que una fecha YYYY-MM-DD cambie de día
+   * por la conversión de zona horaria del navegador.
+   */
+  const coincidencia = String(evento.fecha).match(
+    /^(\d{4})-(\d{2})-(\d{2})$/
+  );
+
+  if (coincidencia) {
+    const [, anio, mes, dia] = coincidencia;
+
+    return `${dia}/${mes}/${anio}`;
+  }
+
+  const fecha = new Date(evento.fecha);
+
+  if (Number.isNaN(fecha.getTime())) {
+    return String(evento.fecha);
+  }
+
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(fecha);
+}
+
+function obtenerHora(evento) {
+  return evento?.hora || "Hora por confirmar";
+}
+
+function obtenerCupos(evento) {
+  const valor =
+    evento?.cupos_disponibles ??
+    evento?.cuposDisponibles ??
+    null;
+
+  if (valor === null || valor === undefined || valor === "") {
+    return null;
+  }
+
+  const numero = Number(valor);
+
+  return Number.isFinite(numero) ? numero : null;
+}
+
+function obtenerImagenEvento(evento) {
+  const clave = normalizarTexto(obtenerNombreEvento(evento));
+
+  /*
+   * Se prioriza la imagen local aprobada para cada evento.
+   * No se usa una URL de ejemplo como example.com.
+   */
+  if (IMAGENES_EVENTOS[clave]) {
+    return IMAGENES_EVENTOS[clave];
+  }
+
+  const imagenRemota = String(evento?.imagen_url || "").trim();
+
+  if (
+    /^https:\/\//i.test(imagenRemota) &&
+    !/example\.com/i.test(imagenRemota)
+  ) {
+    return imagenRemota;
+  }
+
+  return "";
+}
+
+/* ---------- CARGAR CATÁLOGO REAL ---------- */
 
 async function cargarEventos() {
   const contenedor = obtenerElemento("eventos-container");
 
   if (contenedor) {
     contenedor.innerHTML =
-      '<p class="loading-message">Consultando los registros del reino...</p>';
+      '<p class="loading-message">Consultando los eventos del reino...</p>';
   }
+
+  catalogoCargado = false;
 
   try {
     const datos = await solicitarJSON(API_CATALOGO, {
-      method: "GET"
+      method: "GET",
+      cache: "no-store"
     });
 
-    let lista = Array.isArray(datos)
-      ? datos
-      : Array.isArray(datos?.data)
-        ? datos.data
-        : Array.isArray(datos?.eventos)
-          ? datos.eventos
-          : Array.isArray(datos?.body)
-            ? datos.body
-            : datos && typeof datos === "object" && datos.evento_id
-              ? [datos]
-              : null;
+    const lista = extraerListaEventos(datos);
 
     if (!lista) {
       throw new Error(
-        "La respuesta del catálogo no contiene una lista reconocida de eventos."
+        "WF05 no devolvió una lista de eventos reconocible."
       );
     }
 
-    const nombresPermitidos = new Set(
-      EVENTOS_DEMO.map(evento => normalizarTexto(evento.nombre))
-    );
+    /*
+     * Solo eventos publicados.
+     * No se generan datos de demostración si falla el servidor.
+     */
+    eventosActuales = lista.filter(evento => {
+      return (
+        evento &&
+        evento.nombre &&
+        String(evento.estado || "").toUpperCase() === "PUBLICADO"
+      );
+    });
 
-    eventosActuales = lista.filter(evento =>
-      nombresPermitidos.has(normalizarTexto(evento.nombre))
-    );
+    catalogoCargado = true;
 
-    modoDemostracion = false;
+    renderizarEventos();
 
     if (eventosActuales.length === 0) {
-      throw new Error(
-        "El catálogo no devolvió ninguno de los seis eventos esperados."
-      );
+      if (contenedor) {
+        contenedor.innerHTML =
+          '<p class="empty-message">No hay eventos publicados disponibles.</p>';
+      }
     }
   } catch (error) {
-    console.error("Error cargando el catálogo:", error);
+    console.error("Error al cargar el catálogo WF05:", error);
 
-    eventosActuales = EVENTOS_DEMO;
-    modoDemostracion = true;
+    eventosActuales = [];
+    renderizarEventos();
 
-    mostrarAviso(
-      "No se pudo consultar el catálogo de n8n. Se muestran datos de demostración."
-    );
+    if (contenedor) {
+      contenedor.innerHTML = `
+        <div class="catalog-error">
+          <h3>No pudimos consultar el catálogo</h3>
+          <p>
+            No fue posible obtener los eventos del servidor.
+            Inténtalo de nuevo más tarde.
+          </p>
+          <button
+            type="button"
+            class="btn-primary"
+            id="btn-reintentar-catalogo"
+          >
+            Reintentar
+          </button>
+        </div>
+      `;
+
+      obtenerElemento("btn-reintentar-catalogo")
+        ?.addEventListener("click", cargarEventos);
+    }
   }
-
-  renderizarEventos();
 }
 
+/* ---------- FILTRAR EVENTOS ---------- */
 
-/* 7. RENDERIZAR LAS TARJETAS */
+function obtenerEventosFiltrados() {
+  return eventosActuales.filter(evento => {
+    const categoria = normalizarTexto(obtenerCategoria(evento));
 
+    const texto = normalizarTexto([
+      obtenerNombreEvento(evento),
+      obtenerDescripcion(evento),
+      obtenerCategoria(evento),
+      obtenerLugar(evento)
+    ].join(" "));
+
+    const coincideCategoria =
+      categoriaActual === "Todos" ||
+      categoria === normalizarTexto(categoriaActual);
+
+    const coincideBusqueda =
+      texto.includes(normalizarTexto(busquedaActual));
+
+    return coincideCategoria && coincideBusqueda;
+  });
+}
+
+/* ---------- PINTAR TARJETAS ---------- */
 
 function renderizarEventos() {
   const contenedor = obtenerElemento("eventos-container");
   const contador = obtenerElemento("event-count");
 
-  if (!contenedor) return;
-
-  const eventosFiltrados = eventosActuales.filter(evento => {
-    const categoria = obtenerCategoria(evento);
-    const textoBusqueda = normalizarTexto(
-      `${evento.nombre || ""} ${evento.descripcion || ""} ${categoria}`
+  if (!contenedor) {
+    console.error(
+      'No se encontró el contenedor con id="eventos-container".'
     );
-
-    const coincideCategoria =
-      categoriaActual === "Todos" ||
-      normalizarTexto(categoria) === normalizarTexto(categoriaActual);
-
-    const coincideBusqueda =
-      textoBusqueda.includes(normalizarTexto(busquedaActual));
-
-    return coincideCategoria && coincideBusqueda;
-  });
-
-  if (contador) {
-    contador.textContent = String(eventosFiltrados.length);
-  }
-
-  if (eventosFiltrados.length === 0) {
-    contenedor.innerHTML =
-      '<p class="empty-message">No encontramos eventos con esos criterios.</p>';
     return;
   }
 
-  contenedor.innerHTML = eventosFiltrados.map(evento => {
-    const nombre = escaparHTML(evento.nombre || "Evento EventPass");
+  const filtrados = obtenerEventosFiltrados();
+
+  if (contador) {
+    contador.textContent = String(filtrados.length);
+  }
+
+  if (filtrados.length === 0) {
+    contenedor.innerHTML = `
+      <p class="empty-message">
+        ${
+          eventosActuales.length === 0
+            ? "No hay eventos disponibles para mostrar."
+            : "No encontramos eventos con esos criterios."
+        }
+      </p>
+    `;
+    return;
+  }
+
+  contenedor.innerHTML = filtrados.map(evento => {
+    const nombreOriginal = obtenerNombreEvento(evento);
+    const nombre = escaparHTML(nombreOriginal);
     const categoria = escaparHTML(obtenerCategoria(evento));
     const descripcion = escaparHTML(obtenerDescripcion(evento));
-    const imagen = obtenerImagenEvento(evento);
     const fecha = escaparHTML(obtenerFecha(evento));
-
-    // Aceptamos los nombres de campos más habituales del catálogo.
-    const cuposDisponibles =
-      evento.cupos_disponibles ??
-      evento.cuposDisponibles ??
-      evento.cupos_disponibles_evento ??
-      null;
-
-    const cuposHTML = cuposDisponibles !== null &&
-      cuposDisponibles !== undefined &&
-      cuposDisponibles !== ""
-        ? `<p class="event-spots"><strong>Cupos disponibles:</strong> ${escaparHTML(cuposDisponibles)}</p>`
-        : "";
+    const lugar = escaparHTML(obtenerLugar(evento));
+    const imagen = obtenerImagenEvento(evento);
+    const cupos = obtenerCupos(evento);
 
     const imagenHTML = imagen
-      ? `<img class="event-thumbnail" src="${imagen}" alt="${nombre}" loading="lazy">`
-      : '<div class="event-visual-placeholder" aria-hidden="true">✦</div>';
+      ? `
+        <img
+          class="event-thumbnail"
+          src="${escaparHTML(imagen)}"
+          alt="${nombre}"
+          loading="lazy"
+          data-event-image
+        >
+      `
+      : `
+        <div
+          class="event-visual-placeholder"
+          aria-hidden="true"
+        >✦</div>
+      `;
+
+    const cuposHTML = cupos !== null
+      ? `
+        <p class="event-spots">
+          <strong>Cupos disponibles:</strong>
+          <span>${escaparHTML(cupos)}</span>
+        </p>
+      `
+      : "";
 
     return `
       <article class="event-card">
@@ -396,14 +459,22 @@ function renderizarEventos() {
 
         <div class="event-card-content">
           <p class="event-date">${fecha}</p>
+
           <h3>${nombre}</h3>
+
           <p class="event-description">${descripcion}</p>
+
+          <p class="event-location">
+            <span>⌖</span> ${lugar}
+          </p>
+
           ${cuposHTML}
 
           <button
             type="button"
             class="btn-event-details"
-            data-event-name="${escaparHTML(evento.nombre || "")}"
+            data-event-id="${escaparHTML(evento.evento_id || "")}"
+            data-event-name="${nombre}"
           >
             Descubrir evento
           </button>
@@ -412,107 +483,132 @@ function renderizarEventos() {
     `;
   }).join("");
 
+  /*
+   * Se asignan los eventos después de pintar las tarjetas.
+   * No se utiliza onclick inline.
+   */
   contenedor.querySelectorAll("[data-event-name]").forEach(boton => {
     boton.addEventListener("click", () => {
-      const nombreBuscado = normalizarTexto(boton.dataset.eventName);
-      const evento = eventosActuales.find(
-        item => normalizarTexto(item.nombre || "") === nombreBuscado
-      );
+      const id = boton.dataset.eventId;
+      const nombre = normalizarTexto(boton.dataset.eventName);
+
+      const evento = eventosActuales.find(item => {
+        if (id && item.evento_id) {
+          return String(item.evento_id) === String(id);
+        }
+
+        return normalizarTexto(obtenerNombreEvento(item)) === nombre;
+      });
 
       abrirDetalleEvento(evento);
     });
   });
-}
 
-
-/* 8. FILTROS Y BÚSQUEDA */
-
-function configurarFiltros() {
-  document.querySelectorAll(".filter-chip").forEach(boton => {
-    boton.addEventListener("click", () => {
-      categoriaActual = boton.dataset.category || "Todos";
-
-      document.querySelectorAll(".filter-chip").forEach(chip => {
-        chip.classList.toggle("active", chip === boton);
-      });
-
-      renderizarEventos();
+  /*
+   * Si una imagen falla, se oculta solo esa imagen.
+   * La tarjeta y el botón siguen funcionando.
+   */
+  contenedor.querySelectorAll("[data-event-image]").forEach(imagen => {
+    imagen.addEventListener("error", () => {
+      imagen.style.display = "none";
     });
   });
-
-  const buscador = obtenerElemento("event-search");
-
-  buscador?.addEventListener("input", () => {
-    busquedaActual = buscador.value || "";
-    renderizarEventos();
-  });
 }
 
-
-/* 9. DETALLE DEL EVENTO */
+/* ---------- ABRIR DETALLE DEL EVENTO ---------- */
 
 function abrirDetalleEvento(evento) {
-  if (!evento) return;
-
-  eventoSeleccionado = evento;
+  if (!evento) {
+    mostrarAviso("No encontramos la información de este evento.", "error");
+    return;
+  }
 
   const modal = obtenerElemento("event-modal");
   const contenido = obtenerElemento("event-modal-content");
 
-  if (!modal || !contenido) return;
+  if (!modal || !contenido) {
+    console.error(
+      'Falta #event-modal o #event-modal-content en index.html.'
+    );
 
-  const nombre = escaparHTML(evento.nombre || "Evento EventPass");
+    mostrarAviso(
+      "No se pudo abrir el detalle del evento.",
+      "error"
+    );
+
+    return;
+  }
+
+  eventoSeleccionado = evento;
+
+  const nombre = escaparHTML(obtenerNombreEvento(evento));
   const categoria = escaparHTML(obtenerCategoria(evento));
   const descripcion = escaparHTML(obtenerDescripcion(evento));
+  const fecha = escaparHTML(obtenerFecha(evento));
+  const hora = escaparHTML(obtenerHora(evento));
+  const lugar = escaparHTML(obtenerLugar(evento));
   const imagen = obtenerImagenEvento(evento);
-
-  const cupos = evento.cupos_disponibles ??
-    evento.cuposDisponibles ??
-    null;
+  const cupos = obtenerCupos(evento);
 
   const imagenHTML = imagen
-    ? `<div class="event-visual">
-         <img class="event-thumbnail" src="${imagen}" alt="${nombre}">
-       </div>`
+    ? `
+      <img
+        class="event-detail-image"
+        src="${escaparHTML(imagen)}"
+        alt="${nombre}"
+      >
+    `
     : "";
 
-  const datosCupos = cupos !== null
+  const cuposHTML = cupos !== null
     ? `<p><strong>Cupos disponibles:</strong> ${escaparHTML(cupos)}</p>`
     : "";
 
   contenido.innerHTML = `
-    ${imagenHTML}
+    <div class="event-detail-content">
+      ${imagenHTML}
 
-    <p class="event-category">${categoria}</p>
-    <h2>${nombre}</h2>
-    <p>${descripcion}</p>
+      <p class="event-category">${categoria}</p>
 
-    <p><strong>Fecha:</strong> ${escaparHTML(obtenerFecha(evento))}</p>
-    <p><strong>Lugar:</strong> ${escaparHTML(obtenerLugar(evento))}</p>
-    ${datosCupos}
+      <h2>${nombre}</h2>
 
-    <button
-      type="button"
-      class="btn-primary"
-      id="btn-inscribirse-evento"
-      ${modoDemostracion ? "disabled" : ""}
-    >
-      ${modoDemostracion ? "Catálogo de demostración" : "Inscribirme"}
-    </button>
+      <p class="event-detail-description">${descripcion}</p>
 
-    ${
-      modoDemostracion
-        ? '<p class="notice">La inscripción requiere conexión con n8n.</p>'
-        : ""
-    }
+      <div class="event-detail-meta">
+        <p><strong>Fecha:</strong> ${fecha}</p>
+        <p><strong>Hora:</strong> ${hora}</p>
+        <p><strong>Lugar:</strong> ${lugar}</p>
+        ${cuposHTML}
+      </div>
+
+      <button
+        type="button"
+        class="btn-primary"
+        id="btn-inscribirse-evento"
+      >
+        Inscribirme
+      </button>
+    </div>
   `;
+
+  /*
+   * Abrimos el modal después de insertar el contenido.
+   * El modal exterior es el único elemento con clase "modal".
+   */
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
 
   contenido.querySelector("#btn-inscribirse-evento")
     ?.addEventListener("click", iniciarInscripcion);
 
-  modal.classList.add("active");
-  modal.setAttribute("aria-hidden", "false");
+  contenido.querySelector(".event-detail-image")
+    ?.addEventListener("error", eventoImagen => {
+      eventoImagen.currentTarget.style.display = "none";
+    });
 }
+
+/* ---------- CERRAR MODALES ---------- */
 
 function cerrarModal(id) {
   const modal = obtenerElemento(id);
@@ -521,6 +617,10 @@ function cerrarModal(id) {
 
   modal.classList.remove("active");
   modal.setAttribute("aria-hidden", "true");
+
+  if (!document.querySelector(".modal.active")) {
+    document.body.classList.remove("modal-open");
+  }
 }
 
 function configurarModales() {
@@ -543,12 +643,16 @@ function configurarModales() {
 
       modal.classList.add("active");
       modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
     });
   });
 
   document.querySelectorAll(".modal").forEach(modal => {
     modal.addEventListener("click", evento => {
-      if (evento.target === modal) {
+      if (
+        evento.target === modal ||
+        evento.target.classList.contains("modal-backdrop")
+      ) {
         cerrarModal(modal.id);
       }
     });
@@ -563,172 +667,348 @@ function configurarModales() {
   });
 }
 
+/* ---------- FILTROS Y BÚSQUEDA ---------- */
 
-/* 10. LEER LOS CAMPOS DE UN FORMULARIO */
+function configurarFiltros() {
+  const buscador = obtenerElemento("event-search");
 
-function obtenerValorCampo(formulario, selectores) {
-  for (const selector of selectores) {
-    const campo = formulario.querySelector(selector);
-
-    if (campo) {
-      return campo.value.trim();
-    }
-  }
-
-  return "";
-}
-
-
-/* 11. FORMULARIOS: REGISTRO E INICIO DE SESIÓN */
-
-function configurarFormularios() {
-  const formularioIngreso = obtenerElemento("login-form");
-  const formularioRegistro = obtenerElemento("register-form");
-
-  formularioIngreso?.addEventListener("submit", async evento => {
-    evento.preventDefault();
-
-    // No se envían credenciales hasta confirmar el contrato
-    // de entrada y salida de WF02_sesiones.
-    mostrarAviso(
-      "El inicio de sesión requiere conectar y validar el flujo WF02_sesiones."
-    );
+  buscador?.addEventListener("input", evento => {
+    busquedaActual = evento.target.value || "";
+    renderizarEventos();
   });
 
-  formularioRegistro?.addEventListener("submit", async evento => {
-    evento.preventDefault();
+  document.querySelectorAll(".filter-chip").forEach(boton => {
+    boton.addEventListener("click", () => {
+      categoriaActual =
+        boton.dataset.category ||
+        boton.dataset.categoria ||
+        boton.textContent.trim();
 
-    const nombre = obtenerValorCampo(formularioRegistro, [
-      '[name="nombre"]',
-      '[name="name"]',
-      'input[type="text"]'
-    ]);
-
-    const correo = obtenerValorCampo(formularioRegistro, [
-      '[name="correo"]',
-      '[name="email"]',
-      'input[type="email"]'
-    ]);
-
-    const contrasena = obtenerValorCampo(formularioRegistro, [
-      '[name="contrasena"]',
-      '[name="password"]',
-      'input[type="password"]'
-    ]);
-
-    if (!nombre || !correo || !contrasena) {
-      mostrarAviso("Completa el nombre, correo y contraseña.");
-      return;
-    }
-
-    if (modoDemostracion) {
-      mostrarAviso(
-        "No se puede registrar desde el catálogo de demostración."
-      );
-      return;
-    }
-
-    const boton = formularioRegistro.querySelector(
-      'button[type="submit"], input[type="submit"]'
-    );
-
-    if (boton) {
-      boton.disabled = true;
-    }
-
-    try {
-      /*
-       * CONTRATO PENDIENTE DE CONFIRMAR:
-       * Este objeto utiliza nombre, correo y contrasena.
-       * Antes de considerar el registro terminado, debemos
-       * verificar que WF01 espere exactamente estas claves
-       * y que gestione la contraseña de forma segura.
-       */
-      const resultado = await solicitarJSON(API_USUARIOS, {
-        method: "POST",
-        body: JSON.stringify({
-          nombre,
-          correo,
-          contrasena
-        })
+      document.querySelectorAll(".filter-chip").forEach(otro => {
+        otro.classList.remove("active");
+        otro.setAttribute("aria-pressed", "false");
       });
 
-      console.info("Respuesta de WF01:", resultado);
+      boton.classList.add("active");
+      boton.setAttribute("aria-pressed", "true");
 
-      mostrarAviso(
-        resultado?.mensaje ||
-        resultado?.message ||
-        "Solicitud enviada a WF01. Verifica la respuesta del workflow."
-      );
-
-      // No afirmamos que la cuenta se creó si WF01 no lo confirma.
-    } catch (error) {
-      console.error("Error al registrar usuario:", error);
-
-      mostrarAviso(
-        `No fue posible completar el registro: ${error.message}`
-      );
-    } finally {
-      if (boton) {
-        boton.disabled = false;
-      }
-    }
+      renderizarEventos();
+    });
   });
 }
 
-
-/* 12. INSCRIPCIONES */
-
-async function iniciarInscripcion() {
-  if (!eventoSeleccionado) return;
-
-  if (modoDemostracion) {
-    mostrarAviso("La inscripción no está disponible en modo demostración.");
-    return;
-  }
-
-  // WF06 requiere una sesión/usuario y el identificador del evento.
-  // No enviamos una inscripción incompleta ni inventamos esos datos.
-  mostrarAviso(
-    "Antes de inscribirte debemos conectar WF02 (sesiones) y confirmar el formato que espera WF06."
-  );
-}
-
-
-/* 13. NAVEGACIÓN MÓVIL */
+/* ---------- MENÚ MÓVIL ---------- */
 
 function configurarMenuMovil() {
-  const botonMenu = document.querySelector(
-    ".menu-toggle, #menu-toggle, [data-menu-toggle]"
-  );
+  const boton = obtenerElemento("menu-toggle");
+  const navegacion = obtenerElemento("nav-links");
 
-  const navegacion = document.querySelector(
-    ".nav-links, #nav-links, [data-nav-links]"
-  );
+  if (!boton || !navegacion) return;
 
-  if (!botonMenu || !navegacion) return;
-
-  botonMenu.addEventListener("click", () => {
+  boton.addEventListener("click", () => {
     const abierto = navegacion.classList.toggle("active");
 
-    botonMenu.setAttribute("aria-expanded", String(abierto));
+    boton.setAttribute("aria-expanded", String(abierto));
   });
 
   navegacion.querySelectorAll("a").forEach(enlace => {
     enlace.addEventListener("click", () => {
       navegacion.classList.remove("active");
-      botonMenu.setAttribute("aria-expanded", "false");
+      boton.setAttribute("aria-expanded", "false");
     });
   });
 }
 
+/* ---------- REGISTRO DE USUARIO ---------- */
 
-/* 14. INICIALIZACIÓN */
+function configurarRegistro() {
+  const formulario = obtenerElemento("register-form");
 
-document.addEventListener("DOMContentLoaded", () => {
-  configurarFiltros();
+  if (!formulario) return;
+
+  formulario.addEventListener("submit", async evento => {
+    evento.preventDefault();
+
+    const boton = formulario.querySelector('[type="submit"]');
+
+    const nombre =
+      formulario.elements.namedItem("nombre")?.value?.trim() || "";
+
+    const correo =
+      formulario.elements.namedItem("correo")?.value?.trim() || "";
+
+    const contrasena =
+      formulario.elements.namedItem("contrasena")?.value || "";
+
+    if (!nombre || !correo || !contrasena) {
+      mostrarAviso("Completa todos los campos del registro.", "error");
+      return;
+    }
+
+    try {
+      if (boton) boton.disabled = true;
+
+      const respuesta = await solicitarJSON(API_USUARIOS, {
+        method: "POST",
+        body: JSON.stringify({
+          nombre,
+          correo,
+          contrasena,
+          accion: "crear"
+        })
+      });
+
+      if (
+        respuesta?.success === false ||
+        respuesta?.error
+      ) {
+        throw new Error(
+          respuesta.message ||
+          respuesta.mensaje ||
+          "No fue posible completar el registro."
+        );
+      }
+
+      mostrarAviso(
+        respuesta?.mensaje ||
+        respuesta?.message ||
+        "Solicitud de registro enviada correctamente.",
+        "success"
+      );
+
+      formulario.reset();
+
+      cerrarModal("register-modal");
+    } catch (error) {
+      console.error("Error de registro:", error);
+
+      mostrarAviso(
+        error.message ||
+        "No fue posible conectar con el servicio de registro.",
+        "error"
+      );
+    } finally {
+      if (boton) boton.disabled = false;
+    }
+  });
+}
+
+/* ---------- INICIO DE SESIÓN ---------- */
+
+function configurarInicioSesion() {
+  const formulario = obtenerElemento("login-form");
+
+  if (!formulario) return;
+
+  formulario.addEventListener("submit", async evento => {
+    evento.preventDefault();
+
+    const boton = formulario.querySelector('[type="submit"]');
+
+    const correo =
+      formulario.elements.namedItem("email")?.value?.trim() ||
+      formulario.elements.namedItem("correo")?.value?.trim() ||
+      "";
+
+    const contrasena =
+      formulario.elements.namedItem("password")?.value ||
+      formulario.elements.namedItem("contrasena")?.value ||
+      "";
+
+    if (!correo || !contrasena) {
+      mostrarAviso(
+        "Ingresa tu correo y contraseña.",
+        "error"
+      );
+      return;
+    }
+
+    try {
+      if (boton) boton.disabled = true;
+
+      const respuesta = await solicitarJSON(API_SESIONES, {
+        method: "POST",
+        body: JSON.stringify({
+          correo,
+          email: correo,
+          contrasena,
+          password: contrasena,
+          accion: "login"
+        })
+      });
+
+      if (
+        respuesta?.success === false ||
+        respuesta?.error
+      ) {
+        throw new Error(
+          respuesta.message ||
+          respuesta.mensaje ||
+          "No fue posible iniciar sesión."
+        );
+      }
+
+      sesionActual = respuesta;
+
+      mostrarAviso(
+        respuesta?.mensaje ||
+        respuesta?.message ||
+        "Solicitud de inicio de sesión procesada.",
+        "success"
+      );
+
+      cerrarModal("login-modal");
+    } catch (error) {
+      console.error("Error de inicio de sesión:", error);
+
+      mostrarAviso(
+        error.message ||
+        "No fue posible conectar con el servicio de sesiones.",
+        "error"
+      );
+    } finally {
+      if (boton) boton.disabled = false;
+    }
+  });
+}
+
+/* ---------- INSCRIPCIÓN A EVENTOS ---------- */
+
+async function iniciarInscripcion() {
+  if (!eventoSeleccionado) {
+    mostrarAviso("Primero selecciona un evento.", "error");
+    return;
+  }
+
+  if (!sesionActual) {
+    mostrarAviso(
+      "Debes iniciar sesión antes de inscribirte.",
+      "error"
+    );
+
+    cerrarModal("event-modal");
+
+    const loginModal = obtenerElemento("login-modal");
+
+    if (loginModal) {
+      loginModal.classList.add("active");
+      loginModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+    }
+
+    return;
+  }
+
+  if (!eventoSeleccionado.evento_id) {
+    mostrarAviso(
+      "El evento no tiene un identificador válido.",
+      "error"
+    );
+    return;
+  }
+
+  const boton = obtenerElemento("btn-inscribirse-evento");
+
+  try {
+    if (boton) boton.disabled = true;
+
+    const respuesta = await solicitarJSON(API_INSCRIPCIONES, {
+      method: "POST",
+      body: JSON.stringify({
+        evento_id: eventoSeleccionado.evento_id,
+        usuario_id:
+          sesionActual.usuario_id ||
+          sesionActual.usuario?.usuario_id ||
+          "",
+        sesion_id:
+          sesionActual.sesion_id ||
+          "",
+        accion: "crear"
+      })
+    });
+
+    if (
+      respuesta?.success === false ||
+      respuesta?.error
+    ) {
+      throw new Error(
+        respuesta.message ||
+        respuesta.mensaje ||
+        "No fue posible procesar la inscripción."
+      );
+    }
+
+    mostrarAviso(
+      respuesta?.mensaje ||
+      respuesta?.message ||
+      "Solicitud de inscripción procesada.",
+      "success"
+    );
+
+    cerrarModal("event-modal");
+
+    await cargarEventos();
+  } catch (error) {
+    console.error("Error de inscripción:", error);
+
+    mostrarAviso(
+      error.message ||
+      "No fue posible conectar con el servicio de inscripciones.",
+      "error"
+    );
+  } finally {
+    if (boton) boton.disabled = false;
+  }
+}
+
+/* ---------- NAVEGACIÓN ENTRE MODALES ---------- */
+
+function configurarNavegacionAutenticacion() {
+  document.querySelectorAll("[data-open-modal]").forEach(boton => {
+    boton.addEventListener("click", () => {
+      const destino = boton.dataset.openModal;
+
+      if (
+        destino === "register-modal" ||
+        destino === "login-modal"
+      ) {
+        document.querySelectorAll(".modal.active").forEach(modal => {
+          if (modal.id !== destino) {
+            cerrarModal(modal.id);
+          }
+        });
+      }
+    });
+  });
+}
+
+/* ---------- INICIALIZACIÓN ---------- */
+
+function inicializarEventPass() {
   configurarModales();
-  configurarFormularios();
+  configurarFiltros();
   configurarMenuMovil();
+  configurarRegistro();
+  configurarInicioSesion();
+  configurarNavegacionAutenticacion();
+
   cargarEventos();
-});
+
+  console.info(
+    "EventPass inicializado.",
+    "Frontend:",
+    FRONTEND_URL,
+    "Backend configurado:",
+    N8N_BASE_URL
+  );
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    inicializarEventPass,
+    { once: true }
+  );
+} else {
+  inicializarEventPass();
+}
