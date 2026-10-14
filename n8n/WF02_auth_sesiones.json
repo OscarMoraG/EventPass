@@ -256,7 +256,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || {};\n\nconst email = String(body.email || '').trim().toLowerCase();\nconst password = String(body.password || '');\n\nif (!email || !password) {\n  return [{ json: { valido: false, mensaje: 'El correo y la contraseña son obligatorios.' } }];\n}\n\nreturn [{ json: { valido: true, email, password } }];"
+        "jsCode": "const body = $input.first().json.body || {};\n\nconst accion = String(body.accion || 'login').trim().toLowerCase();\n\n// Cierre de sesión: solo necesita la sesión y el usuario\nif (accion === 'logout') {\n  const sesion_id = String(body.sesion_id || '').trim();\n  const usuario_id = String(body.usuario_id || '').trim();\n\n  if (!sesion_id || !usuario_id) {\n    return [{ json: { valido: false, mensaje: 'Faltan sesion_id o usuario_id.' } }];\n  }\n\n  return [{ json: { valido: true, accion, sesion_id, usuario_id } }];\n}\n\nconst email = String(body.email || '').trim().toLowerCase();\nconst password = String(body.password || '');\n\nif (!email || !password) {\n  return [{ json: { valido: false, mensaje: 'El correo y la contraseña son obligatorios.' } }];\n}\n\nreturn [{ json: { valido: true, accion: 'login', email, password } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -402,6 +402,252 @@
       ],
       "id": "b2000000-0000-4000-8000-000000000007",
       "name": "WF02 - Responder sesión creada"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a7000000-0000-4000-8000-000000000207",
+              "leftValue": "={{ $('WF02 - Validar solicitud').first().json.accion === 'logout' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1260,
+        -480
+      ],
+      "id": "a7000000-0000-4000-8000-000000000208",
+      "name": "WF02 - ¿Es cierre de sesión?"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA",
+          "mode": "list",
+          "cachedResultName": "EP02_Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "sesion_id ",
+              "lookupValue": "={{ $('WF02 - Validar solicitud').first().json.sesion_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1040,
+        -480
+      ],
+      "id": "a7000000-0000-4000-8000-000000000209",
+      "name": "WF02 - Consultar sesión a cerrar",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a7000000-0000-4000-8000-000000000210",
+              "leftValue": "={{ String($json.estado || '').toUpperCase() === 'ACTIVA' && String($json.usuario_id || '') === $('WF02 - Validar solicitud').first().json.usuario_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -820,
+        -480
+      ],
+      "id": "a7000000-0000-4000-8000-000000000211",
+      "name": "WF02 - ¿Sesión del usuario?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA",
+          "mode": "list",
+          "cachedResultName": "EP02_Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sesion_id ": "={{ $('WF02 - Validar solicitud').first().json.sesion_id }}",
+            "estado": "CERRADA"
+          },
+          "matchingColumns": [
+            "sesion_id "
+          ],
+          "schema": [
+            {
+              "id": "sesion_id ",
+              "displayName": "sesion_id ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "token",
+              "displayName": "token",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_inicio",
+              "displayName": "fecha_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_expiracion",
+              "displayName": "fecha_expiracion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -600,
+        -480
+      ],
+      "id": "a7000000-0000-4000-8000-000000000212",
+      "name": "WF02 - Cerrar sesión",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, mensaje: 'Sesión cerrada correctamente.' } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -380,
+        -480
+      ],
+      "id": "a7000000-0000-4000-8000-000000000213",
+      "name": "WF02 - Responder sesión cerrada"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, mensaje: 'La sesión no existe, ya estaba cerrada o no pertenece al usuario.' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -600,
+        -240
+      ],
+      "id": "a7000000-0000-4000-8000-000000000214",
+      "name": "WF02 - Responder cierre inválido"
     }
   ],
   "pinData": {},
@@ -432,7 +678,7 @@
       "main": [
         [
           {
-            "node": "Get row(s) in sheet1",
+            "node": "WF02 - ¿Es cierre de sesión?",
             "type": "main",
             "index": 0
           }
@@ -542,6 +788,64 @@
         [
           {
             "node": "WF02 - Responder sesión creada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 - ¿Es cierre de sesión?": {
+      "main": [
+        [
+          {
+            "node": "WF02 - Consultar sesión a cerrar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 - Consultar sesión a cerrar": {
+      "main": [
+        [
+          {
+            "node": "WF02 - ¿Sesión del usuario?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 - ¿Sesión del usuario?": {
+      "main": [
+        [
+          {
+            "node": "WF02 - Cerrar sesión",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF02 - Responder cierre inválido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF02 - Cerrar sesión": {
+      "main": [
+        [
+          {
+            "node": "WF02 - Responder sesión cerrada",
             "type": "main",
             "index": 0
           }

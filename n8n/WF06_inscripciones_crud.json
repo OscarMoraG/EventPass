@@ -592,6 +592,152 @@
       ],
       "id": "c3000000-0000-4000-8000-000000000002",
       "name": "WF06 - Responder evento no disponible"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1BLIj2BNzyVaiD4YijmRPOXbjzi8jPlz9DSqLPcHLfZg",
+          "mode": "list",
+          "cachedResultName": "EP01_Usuarios",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BLIj2BNzyVaiD4YijmRPOXbjzi8jPlz9DSqLPcHLfZg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Usuarios",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1BLIj2BNzyVaiD4YijmRPOXbjzi8jPlz9DSqLPcHLfZg/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "usuario_id",
+              "lookupValue": "={{ $('WF06 - Preparar inscripción').first().json.usuario_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        636,
+        -644
+      ],
+      "id": "a7000000-0000-4000-8000-000000000201",
+      "name": "WF06 - Consultar usuario",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI",
+          "mode": "list",
+          "cachedResultName": "EP03_Telegram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Vinculaciones",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "usuario_id",
+              "lookupValue": "={{ $('WF06 - Preparar inscripción').first().json.usuario_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        856,
+        -644
+      ],
+      "id": "a7000000-0000-4000-8000-000000000202",
+      "name": "WF06 - Consultar vinculación Telegram",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const usuario = $('WF06 - Consultar usuario').all()\n  .map(i => i.json)\n  .find(x => x.usuario_id) || null;\n\nif (!usuario || String(usuario.estado || '').toUpperCase() !== 'ACTIVO') {\n  return [{ json: { valido: false, codigo_error: 'USUARIO_INACTIVO', mensaje: 'Tu cuenta no está activa.' } }];\n}\n\nconst telegram = $('WF06 - Consultar vinculación Telegram').all()\n  .map(i => i.json)\n  .some(x => x.chat_id && String(x.estado || '').toUpperCase() === 'ACTIVA');\n\nif (!telegram) {\n  return [{ json: { valido: false, codigo_error: 'TELEGRAM_NO_VINCULADO', mensaje: 'Vincula tu Telegram antes de inscribirte a un evento.' } }];\n}\n\nreturn [{ json: { valido: true } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1076,
+        -644
+      ],
+      "id": "a7000000-0000-4000-8000-000000000203",
+      "name": "WF06 - Validar usuario y Telegram"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a7000000-0000-4000-8000-000000000204",
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1296,
+        -644
+      ],
+      "id": "a7000000-0000-4000-8000-000000000205",
+      "name": "WF06 - ¿Usuario y Telegram válidos?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, codigo_error: $json.codigo_error, mensaje: $json.mensaje } }}",
+        "options": {
+          "responseCode": 403
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1296,
+        -884
+      ],
+      "id": "a7000000-0000-4000-8000-000000000206",
+      "name": "WF06 - Responder requisitos incompletos"
     }
   ],
   "pinData": {},
@@ -688,7 +834,7 @@
       "main": [
         [
           {
-            "node": "WF06 - Consultar evento",
+            "node": "WF06 - Consultar usuario",
             "type": "main",
             "index": 0
           }
@@ -787,6 +933,57 @@
         [
           {
             "node": "WF06 - Responder HTTP duplicado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Consultar usuario": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Consultar vinculación Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Consultar vinculación Telegram": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Validar usuario y Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - Validar usuario y Telegram": {
+      "main": [
+        [
+          {
+            "node": "WF06 - ¿Usuario y Telegram válidos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF06 - ¿Usuario y Telegram válidos?": {
+      "main": [
+        [
+          {
+            "node": "WF06 - Consultar evento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF06 - Responder requisitos incompletos",
             "type": "main",
             "index": 0
           }

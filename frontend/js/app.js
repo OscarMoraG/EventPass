@@ -147,7 +147,11 @@ async function solicitarJSON(url, opciones = {}) {
       datos?.mensaje ||
       `El servidor respondió con el estado ${respuesta.status}.`;
 
-    throw new Error(mensaje);
+    const falla = new Error(mensaje);
+    falla.codigo = datos?.codigo_error || "";
+    falla.estado = respuesta.status;
+
+    throw falla;
   }
 
   return datos;
@@ -978,6 +982,13 @@ async function iniciarInscripcion() {
   } catch (error) {
     console.error("Error de inscripción:", error);
 
+    if (error.codigo === "TELEGRAM_NO_VINCULADO") {
+      cerrarModal("event-modal");
+      mostrarAviso(error.message, "error");
+      abrirTelegram();
+      return;
+    }
+
     mostrarAviso(
       error.message ||
       "No fue posible conectar con el servicio de inscripciones.",
@@ -1039,6 +1050,20 @@ function actualizarEncabezadoSesion() {
 }
 
 function cerrarSesion() {
+  /* Se avisa al servidor para cerrar la sesión; si falla, igual se cierra aquí. */
+  if (sesionActual?.sesion_id) {
+    solicitarJSON(API_SESIONES, {
+      method: "POST",
+      body: JSON.stringify({
+        accion: "logout",
+        usuario_id: sesionActual.usuario_id || "",
+        sesion_id: sesionActual.sesion_id
+      })
+    }).catch(error => {
+      console.error("No se pudo cerrar la sesión en el servidor:", error);
+    });
+  }
+
   detenerSondeoTelegram();
   telegramVinculado = false;
   telegramVinculacionId = "";
