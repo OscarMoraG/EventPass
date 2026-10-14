@@ -24,16 +24,16 @@ import("https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js")
       loadPreviousSession: false,
       defaultLanguage: "en",
       initialMessages: [
-        "¡Hola! Soy el asistente de EventPass.",
-        "Puedo contarte sobre eventos, fechas, lugares, lista de espera y cómo vincular Telegram. No puedo inscribirte ni modificar datos."
+        "¡Salve, viajero! Soy el heraldo de EventPass.",
+        "Puedo hablarte de eventos, fechas, lugares, lista de espera y cómo vincular Telegram. No puedo inscribirte ni modificar datos."
       ],
       i18n: {
         en: {
-          title: "Asistente EventPass",
-          subtitle: "Pregúntame sobre los eventos del reino.",
+          title: "Heraldo de EventPass",
+          subtitle: "Pregunta por los eventos del reino.",
           footer: "",
           getStarted: "Nueva conversación",
-          inputPlaceholder: "Escribe tu pregunta...",
+          inputPlaceholder: "Pregunta al heraldo...",
           closeButtonTooltip: "Cerrar"
         }
       }

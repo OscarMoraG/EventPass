@@ -554,13 +554,21 @@ function abrirDetalleEvento(evento) {
   const imagen = obtenerImagenEvento(evento);
   const cupos = obtenerCupos(evento);
 
+  /*
+   * La estructura debe coincidir con las reglas de styles.css:
+   * #event-modal-content > .event-visual > .event-thumbnail
+   * La imagen ocupa todo el ancho de la ventana.
+   */
   const imagenHTML = imagen
     ? `
-      <img
-        class="event-detail-image"
-        src="${escaparHTML(imagen)}"
-        alt="${nombre}"
-      >
+      <div class="event-visual" style="aspect-ratio: 16 / 10;">
+        <img
+          class="event-thumbnail"
+          style="max-height: none;"
+          src="${escaparHTML(imagen)}"
+          alt="${nombre}"
+        >
+      </div>
     `
     : "";
 
@@ -573,31 +581,27 @@ function abrirDetalleEvento(evento) {
       : "";
 
   contenido.innerHTML = `
-    <div class="event-detail-content">
-      ${imagenHTML}
+    ${imagenHTML}
 
-      <p class="event-category">${categoria}</p>
+    <p class="event-category">${categoria}</p>
 
-      <h2>${nombre}</h2>
+    <h2>${nombre}</h2>
 
-      <p class="event-detail-description">${descripcion}</p>
+    <p class="event-detail-description">${descripcion}</p>
 
-      <div class="event-detail-meta">
-        <p><strong>Fecha:</strong> ${fecha}</p>
-        <p><strong>Hora:</strong> ${hora}</p>
-        <p><strong>Lugar:</strong> ${lugar}</p>
-        ${cuposHTML}
-      </div>
+    <p><strong>Fecha:</strong> ${fecha}</p>
+    <p><strong>Hora:</strong> ${hora}</p>
+    <p><strong>Lugar:</strong> ${lugar}</p>
+    ${cuposHTML}
 
-      <button
-        type="button"
-        class="btn-primary"
-        id="btn-inscribirse-evento"
-        ${eventoCerrado ? "disabled" : ""}
-      >
-        ${eventoCerrado ? "Evento cerrado" : "Inscribirme"}
-      </button>
-    </div>
+    <button
+      type="button"
+      class="btn-primary"
+      id="btn-inscribirse-evento"
+      ${eventoCerrado ? "disabled" : ""}
+    >
+      ${eventoCerrado ? "Evento cerrado" : "Inscribirme"}
+    </button>
   `;
 
   /*
@@ -611,9 +615,11 @@ function abrirDetalleEvento(evento) {
   contenido.querySelector("#btn-inscribirse-evento")
     ?.addEventListener("click", iniciarInscripcion);
 
-  contenido.querySelector(".event-detail-image")
+  contenido.querySelector(".event-thumbnail")
     ?.addEventListener("error", eventoImagen => {
-      eventoImagen.currentTarget.style.display = "none";
+      const contenedor = eventoImagen.currentTarget.closest(".event-visual");
+
+      if (contenedor) contenedor.style.display = "none";
     });
 }
 
