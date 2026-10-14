@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Secretos
+.env
+*.env.local
+
+# Copias de seguridad de n8n (contienen credenciales)
+*.tgz
+n8n_data_backup*
+
+# Node
+node_modules/
