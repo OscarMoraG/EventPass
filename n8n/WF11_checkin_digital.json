@@ -6,7 +6,9 @@
         "httpMethod": "POST",
         "path": "checkin",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {
+          "allowedOrigins": "https://eventpass-frontend-theta.vercel.app"
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
@@ -99,7 +101,8 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -767,7 +770,8 @@
         -80
       ],
       "id": "8eba40bb-31fd-4222-95b4-3e5ff249e0bc",
-      "name": "WF11 - Notificar check-in por WF09"
+      "name": "WF11 - Notificar check-in por WF09",
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -806,7 +810,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "=={{\n  {\n    ok: false,\n    resultado: \"RECHAZADO\",\n    mensaje: $(\"WF11 - Validar check-in\").first().json.detalle\n  }\n}}",
+        "responseBody": "={{\n  {\n    ok: false,\n    resultado: \"RECHAZADO\",\n    mensaje: $(\"WF11 - Validar check-in\").first().json.detalle\n  }\n}}",
         "options": {
           "responseCode": 400
         }
@@ -819,6 +823,19 @@
       ],
       "id": "4a15f9ba-f71d-4a05-9f52-dea8e2eb229d",
       "name": "WF11 - Responder check-in rechazado"
+    },
+    {
+      "parameters": {
+        "jsCode": "const v = $('WF11 - Validar check-in').first().json;\nconst evento = $('WF11 - Consultar evento').first().json || {};\nconst nombreEvento = evento.nombre || v.evento_id;\n\nreturn [{\n  json: {\n    notificacion_id: 'NOT-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8),\n    usuario_id: v.usuario_id,\n    tipo: 'CHECKIN_EXITOSO',\n    titulo: 'Check-in registrado',\n    mensaje: 'Tu ingreso al evento ' + nombreEvento + ' fue registrado correctamente.',\n    evento_id: v.evento_id,\n    inscripcion_id: v.inscripcion_id,\n    clave_idempotencia: 'CHECKIN_' + v.inscripcion_id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        324,
+        -80
+      ],
+      "id": "d4000000-0000-4000-8000-000000000001",
+      "name": "WF11 - Preparar notificación"
     }
   ],
   "pinData": {},
@@ -918,7 +935,7 @@
       "main": [
         [
           {
-            "node": "WF11 - Notificar check-in por WF09",
+            "node": "WF11 - Preparar notificación",
             "type": "main",
             "index": 0
           }
@@ -952,6 +969,17 @@
         [
           {
             "node": "WF11 - Responder check-in rechazado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF11 - Preparar notificación": {
+      "main": [
+        [
+          {
+            "node": "WF11 - Notificar check-in por WF09",
             "type": "main",
             "index": 0
           }

@@ -9,22 +9,25 @@
 /*
  * IMPORTANTE:
  * FRONTEND_URL es la dirección pública de Vercel.
- * N8N_BASE_URL es la dirección pública (túnel HTTPS) de n8n.
+ * N8N_BASE_URL es la dirección pública (ngrok, dominio estático)
+ * que apunta al puerto 5678 de n8n. Esa dirección no cambia al
+ * reiniciar ngrok, pero ngrok debe estar en ejecución.
  *
- * La dirección trycloudflare.com cambia cada vez que se reinicia
- * el túnel. Si cambia, solo hay que actualizar N8N_BASE_URL,
- * hacer commit y push.
+ * El plan gratuito de ngrok muestra una página de aviso a los
+ * navegadores. Por eso todas las peticiones envían la cabecera
+ * ngrok-skip-browser-warning.
  */
 
 const FRONTEND_URL =
   "https://eventpass-frontend-theta.vercel.app";
 
-const N8N_BASE_URL = "https://ladies-audio-olympus-beverly.trycloudflare.com";
+const N8N_BASE_URL = "https://hydrant-supermom-raging.ngrok-free.dev";
 
 const API_CATALOGO = `${N8N_BASE_URL}/webhook/catalogo`;
 const API_USUARIOS = `${N8N_BASE_URL}/webhook/usuarios`;
 const API_SESIONES = `${N8N_BASE_URL}/webhook/sesiones`;
 const API_INSCRIPCIONES = `${N8N_BASE_URL}/webhook/inscripciones`;
+const API_CHECKIN = `${N8N_BASE_URL}/webhook/checkin`;
 
 /* ---------- IMÁGENES DE LOS EVENTOS ---------- */
 
@@ -56,6 +59,7 @@ let categoriaActual = "Todos";
 let busquedaActual = "";
 let sesionActual = null;
 let catalogoCargado = false;
+let ultimaInscripcion = null;
 
 /* ---------- UTILIDADES ---------- */
 
@@ -111,6 +115,7 @@ async function solicitarJSON(url, opciones = {}) {
     ...opciones,
     headers: {
       Accept: "application/json",
+      "ngrok-skip-browser-warning": "1",
       ...(opciones.body
         ? { "Content-Type": "application/json" }
         : {}),
@@ -942,11 +947,25 @@ async function iniciarInscripcion() {
     }
 
     mostrarAviso(
-      respuesta?.mensaje ||
-      respuesta?.message ||
-      "Solicitud de inscripción procesada.",
+      (
+        respuesta?.mensaje ||
+        respuesta?.message ||
+        "Solicitud de inscripción procesada."
+      ) +
+      (
+        respuesta?.inscripcion?.inscripcion_id
+          ? ` Código de inscripción: ${respuesta.inscripcion.inscripcion_id}`
+          : ""
+      ),
       "success"
     );
+
+    ultimaInscripcion = respuesta?.inscripcion?.inscripcion_id
+      ? {
+          inscripcion_id: respuesta.inscripcion.inscripcion_id,
+          evento_id: respuesta.inscripcion.evento_id || ""
+        }
+      : null;
 
     cerrarModal("event-modal");
 
@@ -1006,6 +1025,147 @@ function cerrarSesion() {
   mostrarAviso("Sesión cerrada.", "info");
 }
 
+/* ---------- CHECK-IN DIGITAL ---------- */
+
+function interpretarRespuestaCheckin(estadoHttp, datos) {
+  const resultado = String(datos?.resultado || "").toUpperCase();
+
+  if (resultado === "EXITOSO") {
+    return {
+      tipo: "success",
+      mensaje: datos.mensaje || "Check-in realizado correctamente."
+    };
+  }
+
+  if (resultado === "DUPLICADO") {
+    return {
+      tipo: "info",
+      mensaje: datos.mensaje || "El ingreso ya había sido registrado."
+    };
+  }
+
+  if (resultado === "RECHAZADO") {
+    return {
+      tipo: "error",
+      mensaje: datos.mensaje || "El check-in fue rechazado."
+    };
+  }
+
+  return {
+    tipo: "error",
+    mensaje:
+      datos?.mensaje ||
+      datos?.message ||
+      `El servidor respondió con el estado ${estadoHttp}.`
+  };
+}
+
+function mostrarResultadoCheckin(tipo, mensaje) {
+  const salida = obtenerElemento("checkin-result");
+
+  if (!salida) return;
+
+  const iconos = { success: "✔", info: "ℹ", error: "✖" };
+  const colores = {
+    success: "var(--gold-light)",
+    info: "var(--text-soft)",
+    error: "#ff9b9b"
+  };
+
+  salida.textContent = `${iconos[tipo] || ""} ${mensaje}`.trim();
+  salida.style.color = colores[tipo] || "";
+}
+
+function configurarCheckin() {
+  const formulario = obtenerElemento("checkin-form");
+
+  /* Los enlaces que abren modales no deben desplazar la página. */
+  document.querySelectorAll("a[data-open-modal]").forEach(enlace => {
+    enlace.addEventListener("click", evento => evento.preventDefault());
+  });
+
+  /* Al abrir el check-in se rellenan los datos de la última inscripción. */
+  document
+    .querySelectorAll('[data-open-modal="checkin-modal"]')
+    .forEach(boton => {
+      boton.addEventListener("click", () => {
+        const inscripcion = obtenerElemento("checkin-inscripcion");
+        const evento = obtenerElemento("checkin-evento");
+
+        if (ultimaInscripcion && inscripcion && evento) {
+          if (!inscripcion.value) {
+            inscripcion.value = ultimaInscripcion.inscripcion_id;
+          }
+
+          if (!evento.value) {
+            evento.value = ultimaInscripcion.evento_id;
+          }
+        }
+
+        mostrarResultadoCheckin("info", "");
+      });
+    });
+
+  if (!formulario) return;
+
+  formulario.addEventListener("submit", async evento => {
+    evento.preventDefault();
+
+    const boton = formulario.querySelector('[type="submit"]');
+
+    const inscripcion_id =
+      formulario.elements.namedItem("inscripcion_id")?.value?.trim() || "";
+
+    const evento_id =
+      formulario.elements.namedItem("evento_id")?.value?.trim() || "";
+
+    if (!inscripcion_id || !evento_id) {
+      mostrarResultadoCheckin(
+        "error",
+        "Escribe el código de inscripción y el código del evento."
+      );
+      return;
+    }
+
+    try {
+      if (boton) boton.disabled = true;
+
+      mostrarResultadoCheckin("info", "Registrando ingreso...");
+
+      const respuesta = await fetch(API_CHECKIN, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "1"
+        },
+        body: JSON.stringify({ inscripcion_id, evento_id })
+      });
+
+      let datos = null;
+
+      try {
+        datos = JSON.parse(await respuesta.text());
+      } catch {
+        datos = null;
+      }
+
+      const resultado = interpretarRespuestaCheckin(respuesta.status, datos);
+
+      mostrarResultadoCheckin(resultado.tipo, resultado.mensaje);
+    } catch (error) {
+      console.error("Error de check-in:", error);
+
+      mostrarResultadoCheckin(
+        "error",
+        "No fue posible conectar con el servicio de check-in."
+      );
+    } finally {
+      if (boton) boton.disabled = false;
+    }
+  });
+}
+
 /* ---------- NAVEGACIÓN ENTRE MODALES ---------- */
 
 function configurarNavegacionAutenticacion() {
@@ -1036,6 +1196,7 @@ function inicializarEventPass() {
   configurarRegistro();
   configurarInicioSesion();
   configurarNavegacionAutenticacion();
+  configurarCheckin();
 
   cargarEventos();
 
