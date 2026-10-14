@@ -14,7 +14,7 @@
 
   <link rel="stylesheet" href="./css/styles.css">
 
-  <script src="./js/app.js?v=7" defer></script>
+  <script src="./js/app.js?v=9" defer></script>
 </head>
 
 <body>
@@ -353,6 +353,8 @@
       © 2026 EventPass. Todos los derechos reservados.
       ·
       <a href="./privacidad.html">Política de privacidad</a>
+      ·
+      <a href="#eventos" data-open-modal="checkin-modal">Check-in</a>
     </p>
 
   </footer>
@@ -384,6 +386,131 @@
     </div>
   </div>
 
+
+  <!-- ================= MODAL: VINCULAR TELEGRAM ================= -->
+  <div
+    class="modal"
+    id="telegram-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="telegram-title"
+    aria-hidden="true"
+  >
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-content auth-modal" role="document">
+      <button
+        type="button"
+        class="close"
+        data-close-modal
+        aria-label="Cerrar vinculación de Telegram"
+      >
+        ×
+      </button>
+
+      <p class="eyebrow">NOTIFICACIONES</p>
+
+      <h2 id="telegram-title">Vincula tu <em>Telegram</em></h2>
+
+      <p class="modal-description">
+        Genera un código y envíalo a nuestro bot para recibir tus avisos
+        también por Telegram.
+      </p>
+
+      <button
+        type="button"
+        id="btn-generar-codigo-telegram"
+        class="btn-primary form-submit"
+      >
+        Generar código
+      </button>
+
+      <p
+        id="telegram-result"
+        class="modal-description"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+      <p class="modal-description">
+        <a
+          href="https://t.me/EventPassMoraBot"
+          target="_blank"
+          rel="noopener"
+        >
+          Abrir el bot en Telegram
+        </a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: CHECK-IN ================= -->
+  <div
+    class="modal"
+    id="checkin-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="checkin-title"
+    aria-hidden="true"
+  >
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-content auth-modal" role="document">
+      <button
+        type="button"
+        class="close"
+        data-close-modal
+        aria-label="Cerrar check-in"
+      >
+        ×
+      </button>
+
+      <p class="eyebrow">CONTROL DE INGRESO</p>
+
+      <h2 id="checkin-title">Check-in del <em>evento</em></h2>
+
+      <p class="modal-description">
+        Registra el ingreso de una persona con los datos de su inscripción.
+      </p>
+
+      <form id="checkin-form">
+        <div class="form-group">
+          <label for="checkin-inscripcion">Código de inscripción</label>
+          <input
+            type="text"
+            id="checkin-inscripcion"
+            name="inscripcion_id"
+            placeholder="INS-..."
+            autocomplete="off"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="checkin-evento">Código del evento</label>
+          <input
+            type="text"
+            id="checkin-evento"
+            name="evento_id"
+            placeholder="EVT-..."
+            autocomplete="off"
+            required
+          >
+        </div>
+
+        <button type="submit" class="btn-primary form-submit">
+          Registrar ingreso
+        </button>
+      </form>
+
+      <p
+        id="checkin-result"
+        class="modal-description"
+        role="status"
+        aria-live="polite"
+      ></p>
+    </div>
+  </div>
 
   <!-- ================= MODAL: INICIO DE SESIÓN ================= -->
 

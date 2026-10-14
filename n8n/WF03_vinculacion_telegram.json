@@ -5,12 +5,15 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "telegram",
-        "options": {}
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://eventpass-frontend-theta.vercel.app"
+        }
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
+        -1100,
         0
       ],
       "id": "f5ce5f69-4a0c-42b9-939a-824c4b447421",
@@ -19,12 +22,169 @@
     },
     {
       "parameters": {
-        "jsCode": "// Datos recibidos desde el Webhook\nconst body = $input.first().json.body;\n\n// Usuario que solicita la vinculación\nconst usuario_id = String(body.usuario_id || '').trim();\n\nif (!usuario_id) {\n  throw new Error('usuario_id es obligatorio');\n}\n\n// Generar código temporal de 6 caracteres\nconst codigo =\n  Math.random().toString(36).substring(2, 8).toUpperCase();\n\n// Identificador del código\nconst codigo_id =\n  'COD-' +\n  Date.now() +\n  '-' +\n  Math.random().toString(36).substring(2, 8);\n\n// Fechas\nconst creado_en = new Date();\n\nconst expira_en = new Date(\n  creado_en.getTime() + 10 * 60 * 1000\n);\n\nreturn [\n  {\n    json: {\n      codigo_id,\n      usuario_id,\n      codigo,\n      creado_en: creado_en.toISOString(),\n      expira_en: expira_en.toISOString(),\n      estado: 'PENDIENTE',\n      usado_en: ''\n    }\n  }\n];"
+        "jsCode": "const body = $input.first().json.body || {};\nconst usuario_id = String(body.usuario_id || '').trim();\nconst sesion_id = String(body.sesion_id || '').trim();\n\nif (!usuario_id || !sesion_id) {\n  return [{ json: { valido: false, mensaje: 'Debes iniciar sesión para vincular Telegram.' } }];\n}\n\nreturn [{ json: { valido: true, usuario_id, sesion_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        224,
+        -880,
+        0
+      ],
+      "id": "f3000000-0000-4000-8000-000000000001",
+      "name": "WF03 - Validar solicitud"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f3000000-0000-4000-8000-000000000002",
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -660,
+        0
+      ],
+      "id": "f3000000-0000-4000-8000-000000000003",
+      "name": "WF03 - ¿Solicitud válida?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, mensaje: $json.mensaje } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -660,
+        240
+      ],
+      "id": "f3000000-0000-4000-8000-000000000004",
+      "name": "WF03 - Responder datos inválidos"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA",
+          "mode": "list",
+          "cachedResultName": "EP02_Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sesiones",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SBsaaQuQyZHP1G1OH6A6nlDo-okcc6BYllPuoGHWsxA/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "sesion_id ",
+              "lookupValue": "={{ $('WF03 - Validar solicitud').first().json.sesion_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -440,
+        0
+      ],
+      "id": "f3000000-0000-4000-8000-000000000005",
+      "name": "WF03 - Consultar sesión",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f3000000-0000-4000-8000-000000000006",
+              "leftValue": "={{ String($json.estado || '').toUpperCase() === 'ACTIVA' && new Date($json.fecha_expiracion).getTime() > Date.now() && String($json.usuario_id || '') === $('WF03 - Validar solicitud').first().json.usuario_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "f3000000-0000-4000-8000-000000000007",
+      "name": "WF03 - ¿Sesión válida?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: false, mensaje: 'Tu sesión no es válida o expiró. Inicia sesión de nuevo.' } }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -220,
+        240
+      ],
+      "id": "f3000000-0000-4000-8000-000000000008",
+      "name": "WF03 - Responder sesión inválida"
+    },
+    {
+      "parameters": {
+        "jsCode": "const usuario_id = $('WF03 - Validar solicitud').first().json.usuario_id;\n\n// Código de 6 caracteres sin letras ambiguas (sin 0, O, 1, I)\nconst alfabeto = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';\nlet codigo = '';\nfor (let i = 0; i < 6; i++) {\n  codigo += alfabeto[Math.floor(Math.random() * alfabeto.length)];\n}\n\nconst codigo_id = 'COD-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8);\nconst creado_en = new Date();\nconst expira_en = new Date(creado_en.getTime() + 10 * 60 * 1000);\n\nreturn [{\n  json: {\n    codigo_id,\n    usuario_id,\n    codigo,\n    creado_en: creado_en.toISOString(),\n    expira_en: expira_en.toISOString(),\n    estado: 'PENDIENTE',\n    usado_en: ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
         0
       ],
       "id": "6516fa2a-9224-42a7-83ae-32f5e8f59153",
@@ -132,7 +292,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        448,
+        220,
         0
       ],
       "id": "0f2a7f53-ff1e-4547-a14e-aea22788f1ea",
@@ -143,6 +303,433 @@
           "name": "Google Sheets account"
         }
       }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, mensaje: 'Código generado. Escríbelo al bot de Telegram en los próximos 10 minutos.', codigo: $('WF03 - Generar código').first().json.codigo, expira_en: $('WF03 - Generar código').first().json.expira_en, bot: 'EventPassMoraBot' } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        440,
+        0
+      ],
+      "id": "f3000000-0000-4000-8000-000000000009",
+      "name": "WF03 - Responder código"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1100,
+        600
+      ],
+      "id": "f3000000-0000-4000-8000-000000000010",
+      "name": "WF03 - Telegram Trigger",
+      "webhookId": "f3a1c9d2-7b4e-4c55-9a10-2d8e6b0f1a77"
+    },
+    {
+      "parameters": {
+        "jsCode": "const m = $input.first().json.message || {};\nconst texto = String(m.text || '').trim();\nconst chat_id = m.chat ? m.chat.id : null;\nconst username = (m.from && (m.from.username || m.from.first_name)) || '';\n\nlet tipo = 'OTRO';\nlet codigo = '';\n\nconst vincular = texto.match(/^\\/vincular(?:@\\w+)?\\s+([A-Za-z0-9]+)\\s*$/i);\n\nif (vincular) {\n  tipo = 'VINCULAR';\n  codigo = vincular[1].toUpperCase();\n} else if (/^\\/vincular/i.test(texto)) {\n  tipo = 'VINCULAR_SIN_CODIGO';\n} else if (/^\\/start/i.test(texto)) {\n  tipo = 'START';\n}\n\nreturn [{ json: { tipo, codigo, chat_id, username, texto } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        600
+      ],
+      "id": "f3000000-0000-4000-8000-000000000011",
+      "name": "WF03 - Interpretar mensaje"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f3000000-0000-4000-8000-000000000012",
+              "leftValue": "={{ $json.tipo === 'VINCULAR' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -660,
+        600
+      ],
+      "id": "f3000000-0000-4000-8000-000000000013",
+      "name": "WF03 - ¿Es vincular?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const m = $('WF03 - Interpretar mensaje').first().json;\n\nlet texto;\nif (m.tipo === 'VINCULAR_SIN_CODIGO') {\n  texto = 'Escribe /vincular seguido de tu código. Ejemplo: /vincular ABC123';\n} else if (m.tipo === 'START') {\n  texto = '¡Hola! Soy el bot de EventPass. Para vincular tu cuenta, genera un código en la página de EventPass y escribe aquí: /vincular CODIGO';\n} else {\n  texto = 'No entendí ese mensaje. Para vincular tu cuenta escribe: /vincular CODIGO';\n}\n\nreturn [{ json: { chat_id: m.chat_id, texto } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        840
+      ],
+      "id": "f3000000-0000-4000-8000-000000000014",
+      "name": "WF03 - Texto de ayuda"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI",
+          "mode": "list",
+          "cachedResultName": "EP03_Telegram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1377322720,
+          "mode": "list",
+          "cachedResultName": "Codigos_Vinculacion",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit#gid=1377322720"
+        },
+        "options": {},
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "codigo",
+              "lookupValue": "={{ $json.codigo }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -440,
+        600
+      ],
+      "id": "f3000000-0000-4000-8000-000000000015",
+      "name": "WF03 - Consultar código",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $('WF03 - Interpretar mensaje').first().json;\nconst filas = $input.all().map(i => i.json).filter(f => f.codigo_id);\nconst ahora = Date.now();\n\nconst fila = filas.find(f =>\n  String(f.estado || '').toUpperCase() === 'PENDIENTE' &&\n  new Date(f.expira_en).getTime() > ahora\n);\n\nif (!fila) {\n  const usado = filas.find(f => String(f.estado || '').toUpperCase() === 'USADO');\n  const vencido = filas.find(f => new Date(f.expira_en).getTime() <= ahora);\n\n  let texto = 'No encontré ese código. Revisa que esté bien escrito.';\n  if (usado) texto = 'Ese código ya fue utilizado. Genera uno nuevo desde EventPass.';\n  else if (vencido) texto = 'Ese código venció. Genera uno nuevo desde EventPass.';\n\n  return [{ json: { valido: false, chat_id: msg.chat_id, texto } }];\n}\n\nreturn [{\n  json: {\n    valido: true,\n    chat_id: msg.chat_id,\n    username: msg.username,\n    codigo_id: fila.codigo_id,\n    usuario_id: fila.usuario_id,\n    vinculacion_id: 'VIN-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8),\n    fecha: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        600
+      ],
+      "id": "f3000000-0000-4000-8000-000000000016",
+      "name": "WF03 - Validar código"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f3000000-0000-4000-8000-000000000017",
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        600
+      ],
+      "id": "f3000000-0000-4000-8000-000000000018",
+      "name": "WF03 - ¿Código válido?"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI",
+          "mode": "list",
+          "cachedResultName": "EP03_Telegram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1377322720,
+          "mode": "list",
+          "cachedResultName": "Codigos_Vinculacion",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit#gid=1377322720"
+        },
+        "options": {},
+        "operation": "update",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "codigo_id": "={{ $('WF03 - Validar código').first().json.codigo_id }}",
+            "estado": "USADO",
+            "usado_en": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "codigo_id"
+          ],
+          "schema": [
+            {
+              "id": "codigo_id",
+              "displayName": "codigo_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "codigo",
+              "displayName": "codigo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "creado_en",
+              "displayName": "creado_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "expira_en",
+              "displayName": "expira_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usado_en",
+              "displayName": "usado_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        220,
+        600
+      ],
+      "id": "f3000000-0000-4000-8000-000000000019",
+      "name": "WF03 - Marcar código como usado",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI",
+          "mode": "list",
+          "cachedResultName": "EP03_Telegram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Vinculaciones",
+          "mode": "name"
+        },
+        "options": {},
+        "operation": "append",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "vinculacion_id": "={{ $('WF03 - Validar código').first().json.vinculacion_id }}",
+            "usuario_id": "={{ $('WF03 - Validar código').first().json.usuario_id }}",
+            "chat_id": "={{ $('WF03 - Validar código').first().json.chat_id }}",
+            "telegram_username": "={{ $('WF03 - Validar código').first().json.username }}",
+            "fecha_vinculacion": "={{ $('WF03 - Validar código').first().json.fecha }}",
+            "estado": "ACTIVA"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "vinculacion_id",
+              "displayName": "vinculacion_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "chat_id",
+              "displayName": "chat_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "telegram_username",
+              "displayName": "telegram_username",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_vinculacion",
+              "displayName": "fecha_vinculacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        440,
+        600
+      ],
+      "id": "f3000000-0000-4000-8000-000000000020",
+      "name": "WF03 - Guardar vinculación",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const v = $('WF03 - Validar código').first().json;\nreturn [{ json: { chat_id: v.chat_id, texto: '✅ ¡Listo! Tu cuenta de EventPass quedó vinculada. Recibirás tus notificaciones también por aquí.' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        600
+      ],
+      "id": "f3000000-0000-4000-8000-000000000021",
+      "name": "WF03 - Texto de éxito"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.texto }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        720
+      ],
+      "id": "f3000000-0000-4000-8000-000000000022",
+      "name": "WF03 - Responder por Telegram"
     }
   ],
   "pinData": {},
@@ -151,7 +738,65 @@
       "main": [
         [
           {
+            "node": "WF03 - Validar solicitud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Validar solicitud": {
+      "main": [
+        [
+          {
+            "node": "WF03 - ¿Solicitud válida?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - ¿Solicitud válida?": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Consultar sesión",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF03 - Responder datos inválidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Consultar sesión": {
+      "main": [
+        [
+          {
+            "node": "WF03 - ¿Sesión válida?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - ¿Sesión válida?": {
+      "main": [
+        [
+          {
             "node": "WF03 - Generar código",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF03 - Responder sesión inválida",
             "type": "main",
             "index": 0
           }
@@ -163,6 +808,141 @@
         [
           {
             "node": "WF03 - Guardar código",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Guardar código": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Responder código",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Interpretar mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Interpretar mensaje": {
+      "main": [
+        [
+          {
+            "node": "WF03 - ¿Es vincular?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - ¿Es vincular?": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Consultar código",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF03 - Texto de ayuda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Texto de ayuda": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Responder por Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Consultar código": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Validar código",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Validar código": {
+      "main": [
+        [
+          {
+            "node": "WF03 - ¿Código válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - ¿Código válido?": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Marcar código como usado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF03 - Responder por Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Marcar código como usado": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Guardar vinculación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Guardar vinculación": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Texto de éxito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Texto de éxito": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Responder por Telegram",
             "type": "main",
             "index": 0
           }

@@ -28,6 +28,7 @@ const API_USUARIOS = `${N8N_BASE_URL}/webhook/usuarios`;
 const API_SESIONES = `${N8N_BASE_URL}/webhook/sesiones`;
 const API_INSCRIPCIONES = `${N8N_BASE_URL}/webhook/inscripciones`;
 const API_CHECKIN = `${N8N_BASE_URL}/webhook/checkin`;
+const API_TELEGRAM = `${N8N_BASE_URL}/webhook/telegram`;
 
 /* ---------- IMÁGENES DE LOS EVENTOS ---------- */
 
@@ -1008,11 +1009,28 @@ function actualizarEncabezadoSesion() {
     }
 
     salir.textContent = nombre ? `Salir (${nombre})` : "Salir";
+
+    let telegram = obtenerElemento("btn-nav-telegram");
+
+    if (!telegram) {
+      telegram = document.createElement("button");
+      telegram.type = "button";
+      telegram.id = "btn-nav-telegram";
+      telegram.className = "btn-nav-login";
+      telegram.textContent = "Telegram";
+      telegram.addEventListener("click", () => {
+        mostrarResultadoTelegram("info", "");
+        abrirModalPorId("telegram-modal");
+      });
+      entrar.after(telegram);
+    }
+
     entrar.style.display = "none";
 
     if (registro) registro.style.display = "none";
   } else {
     salir?.remove();
+    obtenerElemento("btn-nav-telegram")?.remove();
     entrar.style.display = "";
 
     if (registro) registro.style.display = "";
@@ -1023,6 +1041,85 @@ function cerrarSesion() {
   sesionActual = null;
   actualizarEncabezadoSesion();
   mostrarAviso("Sesión cerrada.", "info");
+}
+
+/* ---------- VINCULAR TELEGRAM ---------- */
+
+function abrirModalPorId(id) {
+  const modal = obtenerElemento(id);
+
+  if (!modal) return;
+
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+function mostrarResultadoTelegram(tipo, mensaje) {
+  const salida = obtenerElemento("telegram-result");
+
+  if (!salida) return;
+
+  const iconos = { success: "✔", info: "ℹ", error: "✖" };
+  const colores = {
+    success: "var(--gold-light)",
+    info: "var(--text-soft)",
+    error: "#ff9b9b"
+  };
+
+  salida.textContent = mensaje ? `${iconos[tipo] || ""} ${mensaje}`.trim() : "";
+  salida.style.color = colores[tipo] || "";
+}
+
+function configurarTelegram() {
+  const boton = obtenerElemento("btn-generar-codigo-telegram");
+
+  if (!boton) return;
+
+  boton.addEventListener("click", async () => {
+    if (!sesionActual) {
+      mostrarResultadoTelegram(
+        "error",
+        "Debes iniciar sesión para vincular Telegram."
+      );
+      return;
+    }
+
+    try {
+      boton.disabled = true;
+      mostrarResultadoTelegram("info", "Generando código...");
+
+      const respuesta = await solicitarJSON(API_TELEGRAM, {
+        method: "POST",
+        body: JSON.stringify({
+          usuario_id: sesionActual.usuario_id || "",
+          sesion_id: sesionActual.sesion_id || ""
+        })
+      });
+
+      if (respuesta?.ok === false || !respuesta?.codigo) {
+        throw new Error(
+          respuesta?.mensaje || "No fue posible generar el código."
+        );
+      }
+
+      mostrarResultadoTelegram(
+        "success",
+        `Tu código es ${respuesta.codigo}. Abre el bot en Telegram y ` +
+        `escribe: /vincular ${respuesta.codigo} (vence en 10 minutos).`
+      );
+    } catch (error) {
+      console.error("Error al generar el código de Telegram:", error);
+
+      mostrarResultadoTelegram(
+        "error",
+        error.message ||
+        "No fue posible conectar con el servicio de Telegram."
+      );
+    } finally {
+      boton.disabled = false;
+    }
+  });
 }
 
 /* ---------- CHECK-IN DIGITAL ---------- */
@@ -1197,6 +1294,7 @@ function inicializarEventPass() {
   configurarInicioSesion();
   configurarNavegacionAutenticacion();
   configurarCheckin();
+  configurarTelegram();
 
   cargarEventos();
 

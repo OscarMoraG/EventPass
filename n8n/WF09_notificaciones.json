@@ -8,11 +8,24 @@
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.2,
       "position": [
-        -544,
+        -1100,
         -480
       ],
       "id": "3aaf85e2-3c7f-4a11-a228-5b1f4ee47978",
       "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const e = $input.first().json;\nconst sufijo = Date.now() + '-' + Math.random().toString(36).substring(2, 8);\n\nreturn [{\n  json: {\n    ...e,\n    notificacion_id: e.notificacion_id || ('NOT-' + sufijo),\n    clave_idempotencia: e.clave_idempotencia ||\n      ((e.tipo || 'NOTIFICACION') + '_' + (e.inscripcion_id || e.evento_id || e.usuario_id || '') + '_' + sufijo)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        -480
+      ],
+      "id": "f9000000-0000-4000-8000-000000000001",
+      "name": "WF09 - Preparar notificación"
     },
     {
       "parameters": {
@@ -34,17 +47,19 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "notificacion_id": "={{ $json.notificacion_id }}",
-            "usuario_id": "={{ $json.usuario_id }}",
-            "tipo": "={{ $json.tipo }}",
-            "titulo": "={{ $json.titulo }}",
-            "mensaje": "={{ $json.mensaje }}",
-            "evento_id": "={{ $json.evento_id }}",
-            "inscripcion_id": "={{ $json.inscripcion_id }}",
+            "notificacion_id": "={{ $('WF09 - Preparar notificación').first().json.notificacion_id }}",
+            "usuario_id": "={{ $('WF09 - Preparar notificación').first().json.usuario_id }}",
+            "tipo": "={{ $('WF09 - Preparar notificación').first().json.tipo }}",
+            "titulo": "={{ $('WF09 - Preparar notificación').first().json.titulo }}",
+            "mensaje": "={{ $('WF09 - Preparar notificación').first().json.mensaje }}",
+            "evento_id": "={{ $('WF09 - Preparar notificación').first().json.evento_id }}",
+            "inscripcion_id": "={{ $('WF09 - Preparar notificación').first().json.inscripcion_id }}",
             "fecha": "={{ new Date().toISOString() }}",
             "gmail_estado": "PENDIENTE",
             "telegram_estado": "PENDIENTE",
-            "clave_idempotencia": "={{ $json.clave_idempotencia }}"
+            "gmail_error": "",
+            "telegram_error": "",
+            "clave_idempotencia": "={{ $('WF09 - Preparar notificación').first().json.clave_idempotencia }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -174,7 +189,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        -320,
+        -660,
         -480
       ],
       "id": "2e01b45a-f557-4eb7-95d6-fe693e8cab9a",
@@ -183,29 +198,6 @@
         "googleSheetsOAuth2Api": {
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "sendTo": "={{ $json.email_normalizado }}",
-        "subject": "={{ $('When Executed by Another Workflow').first().json.titulo }}",
-        "message": "={{ $('When Executed by Another Workflow').first().json.mensaje }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 2.2,
-      "position": [
-        -528,
-        -272
-      ],
-      "id": "cc94ef38-b775-4d10-b757-7fac58be3e06",
-      "name": "Send a message",
-      "webhookId": "e77d116c-a23d-4820-868b-5c8865d9cce1",
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "NhgjnoCXQauvrWhg",
-          "name": "Gmail account"
         }
       }
     },
@@ -229,7 +221,7 @@
           "values": [
             {
               "lookupColumn": "usuario_id",
-              "lookupValue": "={{ $('When Executed by Another Workflow').first().json.usuario_id }}"
+              "lookupValue": "={{ $('WF09 - Preparar notificación').first().json.usuario_id }}"
             }
           ]
         },
@@ -238,7 +230,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        -96,
+        -440,
         -480
       ],
       "id": "8ae72001-2335-41d2-8927-e03fca866de2",
@@ -248,7 +240,116 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI",
+          "mode": "list",
+          "cachedResultName": "EP03_Telegram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Vinculaciones",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "usuario_id",
+              "lookupValue": "={{ $('WF09 - Preparar notificación').first().json.usuario_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -220,
+        -480
+      ],
+      "id": "f9000000-0000-4000-8000-000000000002",
+      "name": "WF09 - Consultar vinculación",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('WF09 - Preparar notificación').first().json;\n\nconst usuario = $('WF09 - Consultar usuario').all()\n  .map(i => i.json)\n  .find(u => u.usuario_id) || {};\n\n// Última vinculación ACTIVA de Telegram\nconst vinculacion = $('WF09 - Consultar vinculación').all()\n  .map(i => i.json)\n  .filter(v => v.chat_id && String(v.estado || '').toUpperCase() === 'ACTIVA')\n  .sort((a, b) => new Date(b.fecha_vinculacion || 0) - new Date(a.fecha_vinculacion || 0))[0];\n\nreturn [{\n  json: {\n    ...base,\n    email: usuario.email_normalizado || '',\n    chat_id: vinculacion ? String(vinculacion.chat_id) : ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -480
+      ],
+      "id": "f9000000-0000-4000-8000-000000000003",
+      "name": "WF09 - Resolver destinos"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('WF09 - Resolver destinos').first().json.email }}",
+        "subject": "={{ $('WF09 - Resolver destinos').first().json.titulo }}",
+        "message": "={{ $('WF09 - Resolver destinos').first().json.mensaje }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        220,
+        -480
+      ],
+      "id": "cc94ef38-b775-4d10-b757-7fac58be3e06",
+      "name": "Send a message",
+      "webhookId": "e77d116c-a23d-4820-868b-5c8865d9cce1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "NhgjnoCXQauvrWhg",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('WF09 - Resolver destinos').first().json.chat_id }}",
+        "text": "={{ $('WF09 - Resolver destinos').first().json.titulo + '\\n\\n' + $('WF09 - Resolver destinos').first().json.mensaje }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        -480
+      ],
+      "id": "f9000000-0000-4000-8000-000000000004",
+      "name": "WF09 - Enviar Telegram",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $('WF09 - Resolver destinos').first().json;\nconst g = $('Send a message').first().json || {};\nconst t = $('WF09 - Enviar Telegram').first().json || {};\n\nconst texto = e => e\n  ? String(typeof e === 'string' ? e : (e.message || JSON.stringify(e))).slice(0, 300)\n  : '';\n\nlet gmail_estado, gmail_error = '';\nif (!r.email) {\n  gmail_estado = 'NO_APLICA';\n  gmail_error = 'El usuario no tiene correo registrado.';\n} else if (g.error) {\n  gmail_estado = 'ERROR';\n  gmail_error = texto(g.error);\n} else {\n  gmail_estado = 'ENVIADO';\n}\n\nlet telegram_estado, telegram_error = '';\nif (!r.chat_id) {\n  telegram_estado = 'NO_APLICA';\n  telegram_error = 'El usuario no tiene Telegram vinculado.';\n} else if (t.error) {\n  telegram_estado = 'ERROR';\n  telegram_error = texto(t.error);\n} else {\n  telegram_estado = 'ENVIADO';\n}\n\nreturn [{\n  json: {\n    notificacion_id: r.notificacion_id,\n    gmail_estado,\n    gmail_error,\n    telegram_estado,\n    telegram_error\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -480
+      ],
+      "id": "f9000000-0000-4000-8000-000000000005",
+      "name": "WF09 - Resultado por canal"
     },
     {
       "parameters": {
@@ -270,8 +371,11 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "notificacion_id": "={{ $('When Executed by Another Workflow').item.json.notificacion_id }}",
-            "gmail_estado": "ENVIADO"
+            "notificacion_id": "={{ $('WF09 - Resultado por canal').first().json.notificacion_id }}",
+            "gmail_estado": "={{ $('WF09 - Resultado por canal').first().json.gmail_estado }}",
+            "gmail_error": "={{ $('WF09 - Resultado por canal').first().json.gmail_error }}",
+            "telegram_estado": "={{ $('WF09 - Resultado por canal').first().json.telegram_estado }}",
+            "telegram_error": "={{ $('WF09 - Resultado por canal').first().json.telegram_error }}"
           },
           "matchingColumns": [
             "notificacion_id"
@@ -427,11 +531,11 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        -304,
-        -272
+        880,
+        -480
       ],
       "id": "189f534b-c888-4ca3-9a5d-03d225a90621",
-      "name": "WF09 - Actualizar estado Gmail",
+      "name": "WF09 - Actualizar resultado",
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "F4XBiwGF1TKJqTHr",
@@ -443,6 +547,17 @@
   "pinData": {},
   "connections": {
     "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "WF09 - Preparar notificación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF09 - Preparar notificación": {
       "main": [
         [
           {
@@ -468,6 +583,28 @@
       "main": [
         [
           {
+            "node": "WF09 - Consultar vinculación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF09 - Consultar vinculación": {
+      "main": [
+        [
+          {
+            "node": "WF09 - Resolver destinos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF09 - Resolver destinos": {
+      "main": [
+        [
+          {
             "node": "Send a message",
             "type": "main",
             "index": 0
@@ -479,7 +616,29 @@
       "main": [
         [
           {
-            "node": "WF09 - Actualizar estado Gmail",
+            "node": "WF09 - Enviar Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF09 - Enviar Telegram": {
+      "main": [
+        [
+          {
+            "node": "WF09 - Resultado por canal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF09 - Resultado por canal": {
+      "main": [
+        [
+          {
+            "node": "WF09 - Actualizar resultado",
             "type": "main",
             "index": 0
           }

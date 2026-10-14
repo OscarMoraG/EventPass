@@ -65,11 +65,12 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "const eventos = $('WF07 - Consultar eventos').all();\nconst inscripciones = $input.all();\n\nconst reasignaciones = [];\n\nfor (const eventoItem of eventos) {\n  const evento = eventoItem.json;\n\n  const eventoId = String(evento.evento_id || '');\n\n  if (!eventoId) {\n    continue;\n  }\n\n  // No reasignar eventos cancelados o cerrados\n  const estadoEvento = String(evento.estado || '').toUpperCase();\n\n  if (['CANCELADO', 'CERRADO'].includes(estadoEvento)) {\n    continue;\n  }\n\n  const capacidad = Number(evento.capacidad || 0);\n\n  // Inscripciones pertenecientes a este evento\n  const inscripcionesEvento = inscripciones.filter(item =>\n    String(item.json.evento_id || '') === eventoId\n  );\n\n  // Personas actualmente confirmadas\n  const confirmadas = inscripcionesEvento.filter(item =>\n    String(item.json.estado || '').toUpperCase() === 'CONFIRMADA'\n  );\n\n  // Personas en lista de espera\n  const espera = inscripcionesEvento\n    .filter(item =>\n      String(item.json.estado || '').toUpperCase() === 'LISTA_ESPERA'\n    )\n    .sort((a, b) => {\n      const fechaA = new Date(a.json.fecha_inscripcion || 0);\n      const fechaB = new Date(b.json.fecha_inscripcion || 0);\n\n      return fechaA - fechaB;\n    });\n\n  // Cupos disponibles\n  const cuposDisponibles = Math.max(\n    capacidad - confirmadas.length,\n    0\n  );\n\n  // Seleccionar únicamente los primeros usuarios de la lista\n  const candidatos = espera.slice(0, cuposDisponibles);\n\n  candidatos.forEach((item, index) => {\n    reasignaciones.push({\n      json: {\n        ...item.json,\n\n        estado_anterior: 'LISTA_ESPERA',\n        estado_nuevo: 'CONFIRMADA',\n\n        orden_lista: index + 1,\n\n        fecha_reasignacion: new Date().toISOString(),\n\n        evento_nombre: evento.nombre,\n\n        cupos_disponibles: cuposDisponibles\n      }\n    });\n  });\n}\n\nreturn reasignaciones;"
+        "jsCode": "const eventos = $('WF07 - Consultar eventos').all();\nconst inscripciones = $input.all();\n\nconst reasignaciones = [];\n\nfor (const eventoItem of eventos) {\n  const evento = eventoItem.json;\n\n  const eventoId = String(evento.evento_id || '');\n\n  if (!eventoId) {\n    continue;\n  }\n\n  // No reasignar eventos cancelados o cerrados\n  const estadoEvento = String(evento.estado || '').toUpperCase();\n\n  if (['CANCELADO', 'CERRADO'].includes(estadoEvento)) {\n    continue;\n  }\n\n  const capacidad = Number(evento.capacidad || 0);\n\n  // No reasignar eventos que ya pasaron (fecha anterior a hoy, hora de Colombia)\n  const hoy = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);\n  const fechaEvento = String(evento.fecha || '').slice(0, 10);\n\n  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(fechaEvento) && fechaEvento < hoy) {\n    continue;\n  }\n\n  // Inscripciones pertenecientes a este evento\n  const inscripcionesEvento = inscripciones.filter(item =>\n    String(item.json.evento_id || '') === eventoId\n  );\n\n  // Personas actualmente confirmadas\n  const confirmadas = inscripcionesEvento.filter(item =>\n    ['CONFIRMADA', 'ASISTIO'].includes(String(item.json.estado || '').toUpperCase())\n  );\n\n  // Personas en lista de espera\n  const espera = inscripcionesEvento\n    .filter(item =>\n      String(item.json.estado || '').toUpperCase() === 'LISTA_ESPERA'\n    )\n    .sort((a, b) => {\n      const fechaA = new Date(a.json.fecha_inscripcion || 0);\n      const fechaB = new Date(b.json.fecha_inscripcion || 0);\n\n      return fechaA - fechaB;\n    });\n\n  // Cupos disponibles\n  const cuposDisponibles = Math.max(\n    capacidad - confirmadas.length,\n    0\n  );\n\n  // Seleccionar únicamente los primeros usuarios de la lista\n  const candidatos = espera.slice(0, cuposDisponibles);\n\n  candidatos.forEach((item, index) => {\n    reasignaciones.push({\n      json: {\n        ...item.json,\n\n        estado_anterior: 'LISTA_ESPERA',\n        estado_nuevo: 'CONFIRMADA',\n\n        orden_lista: index + 1,\n\n        fecha_reasignacion: new Date().toISOString(),\n\n        evento_nombre: evento.nombre,\n\n        cupos_disponibles: cuposDisponibles\n      }\n    });\n  });\n}\n\nreturn reasignaciones;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -119,15 +120,15 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "reasignacion_id": "={{ $('WF07 - Preparar registro de reasignación').first().json.reasignacion_id }}",
-            "evento_id": "={{ $('WF07 - Preparar registro de reasignación').first().json.evento_id }}",
-            "inscripcion_id": "={{ $('WF07 - Preparar registro de reasignación').first().json.inscripcion_id }}",
-            "usuario_id": "={{ $('WF07 - Preparar registro de reasignación').first().json.reasignacion_id }}",
-            "fecha": "={{ $('WF07 - Preparar registro de reasignación').first().json.fecha }}",
-            "orden_lista": "={{ $('WF07 - Preparar registro de reasignación').first().json.orden_lista }}",
-            "estado_anterior": "={{ $('WF07 - Preparar registro de reasignación').first().json.estado_anterior }}",
-            "estado_nuevo": "={{ $('WF07 - Preparar registro de reasignación').first().json.estado_nuevo }}",
-            "resultado_notificacion": "={{ $('WF07 - Preparar registro de reasignación').first().json.resultado_notificacion }}"
+            "reasignacion_id": "={{ $('WF07 - Preparar registro de reasignación').all()[$itemIndex].json.reasignacion_id }}",
+            "evento_id": "={{ $('WF07 - Preparar registro de reasignación').all()[$itemIndex].json.evento_id }}",
+            "inscripcion_id": "={{ $('WF07 - Preparar registro de reasignación').all()[$itemIndex].json.inscripcion_id }}",
+            "usuario_id": "={{ $('WF07 - Preparar registro de reasignación').all()[$itemIndex].json.usuario_id }}",
+            "fecha": "={{ $('WF07 - Preparar registro de reasignación').all()[$itemIndex].json.fecha }}",
+            "orden_lista": "={{ $('WF07 - Preparar registro de reasignación').all()[$itemIndex].json.orden_lista }}",
+            "estado_anterior": "={{ $('WF07 - Preparar registro de reasignación').all()[$itemIndex].json.estado_anterior }}",
+            "estado_nuevo": "={{ $('WF07 - Preparar registro de reasignación').all()[$itemIndex].json.estado_nuevo }}",
+            "resultado_notificacion": "={{ $('WF07 - Preparar registro de reasignación').all()[$itemIndex].json.resultado_notificacion }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -235,47 +236,6 @@
     },
     {
       "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k",
-          "mode": "list",
-          "cachedResultName": "EP06_Inscripciones",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Inscripciones",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mRencQ_gExgGvpvbnIkeTdGsDFYDn5zCbc1LRmWgM_k/edit#gid=0"
-        },
-        "filtersUI": {
-          "values": [
-            {
-              "lookupColumn": "inscripcion_id",
-              "lookupValue": "={{ $json.inscripcion_id }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.7,
-      "position": [
-        -448,
-        -96
-      ],
-      "id": "6bc846f7-4ba1-459e-b6a1-2dbb3a076f25",
-      "name": "WF07 - Buscar inscripción",
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "F4XBiwGF1TKJqTHr",
-          "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "operation": "update",
         "documentId": {
           "__rl": true,
@@ -303,7 +263,7 @@
             "nombre_acreditacion": "={{ $json.nombre_acreditacion }}",
             "observaciones": "={{ $json.observaciones }}",
             "origen": "={{ $json.origen }}",
-            "orden_espera": "={{ $json.orden_espera }}"
+            "orden_espera": ""
           },
           "matchingColumns": [
             "inscripcion_id"
@@ -434,7 +394,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const encontrado = $input.first().json;\nconst calculado = $('WF07 - Calcular reasignaciones').all()[$itemIndex].json;\n\nreturn [\n  {\n    json: {\n      ...encontrado,\n\n      reasignacion_id:\n        'REA-' +\n        Date.now() +\n        '-' +\n        Math.random().toString(36).substring(2, 8),\n\n      evento_id: calculado.evento_id,\n      inscripcion_id: calculado.inscripcion_id,\n      usuario_id: calculado.usuario_id,\n      fecha: calculado.fecha_reasignacion,\n      orden_lista: calculado.orden_lista,\n      estado_anterior: calculado.estado_anterior,\n      estado_nuevo: calculado.estado_nuevo,\n      resultado_notificacion: 'PENDIENTE'\n    }\n  }\n];"
+        "jsCode": "// Una salida por cada usuario que será promovido (puede haber varios cupos libres).\nreturn $input.all().map(item => {\n  const c = item.json;\n  const sufijo = Date.now() + '-' + Math.random().toString(36).substring(2, 8);\n\n  return {\n    json: {\n      ...c,\n      reasignacion_id: 'REA-' + sufijo,\n      fecha: c.fecha_reasignacion,\n      resultado_notificacion: 'SOLICITADA',\n      notificacion_id: 'NOT-' + sufijo,\n      tipo: 'REASIGNACION_CUPO',\n      titulo: 'Tu cupo fue confirmado',\n      mensaje: 'Se liberó un cupo en \"' + c.evento_nombre + '\" y tu inscripción pasó de lista de espera a CONFIRMADA.',\n      clave_idempotencia: 'REASIG_' + c.inscripcion_id + '_' + c.estado_nuevo\n    }\n  };\n});"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -444,6 +404,36 @@
       ],
       "id": "4c827e9f-fa5b-43a4-87cd-c3193d5fa044",
       "name": "WF07 - Preparar registro de reasignación"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "Zv1yTMsPMob4N0BJ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/Zv1yTMsPMob4N0BJ",
+          "cachedResultName": "WF09_notificaciones"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.4,
+      "position": [
+        -448,
+        300
+      ],
+      "id": "e5000000-0000-4000-8000-000000000001",
+      "name": "WF07 - Notificar reasignación por WF09",
+      "onError": "continueRegularOutput"
     }
   ],
   "pinData": {},
@@ -485,17 +475,6 @@
       "main": [
         [
           {
-            "node": "WF07 - Buscar inscripción",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "WF07 - Buscar inscripción": {
-      "main": [
-        [
-          {
             "node": "WF07 - Preparar registro de reasignación",
             "type": "main",
             "index": 0
@@ -519,6 +498,11 @@
         [
           {
             "node": "WF07 - Actualizar inscripción",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WF07 - Notificar reasignación por WF09",
             "type": "main",
             "index": 0
           }
