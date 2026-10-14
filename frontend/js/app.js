@@ -61,6 +61,9 @@ let busquedaActual = "";
 let sesionActual = null;
 let catalogoCargado = false;
 let ultimaInscripcion = null;
+let telegramVinculado = false;
+let telegramVinculacionId = "";
+let temporizadorTelegram = null;
 
 /* ---------- UTILIDADES ---------- */
 
@@ -852,6 +855,7 @@ function configurarInicioSesion() {
 
       sesionActual = respuesta;
       actualizarEncabezadoSesion();
+      consultarEstadoTelegram();
 
       mostrarAviso(
         respuesta?.mensaje ||
@@ -1017,11 +1021,8 @@ function actualizarEncabezadoSesion() {
       telegram.type = "button";
       telegram.id = "btn-nav-telegram";
       telegram.className = "btn-nav-login";
-      telegram.textContent = "Telegram";
-      telegram.addEventListener("click", () => {
-        mostrarResultadoTelegram("info", "");
-        abrirModalPorId("telegram-modal");
-      });
+      telegram.textContent = telegramVinculado ? "Telegram ✓" : "Telegram";
+      telegram.addEventListener("click", abrirTelegram);
       entrar.after(telegram);
     }
 
@@ -1038,6 +1039,9 @@ function actualizarEncabezadoSesion() {
 }
 
 function cerrarSesion() {
+  detenerSondeoTelegram();
+  telegramVinculado = false;
+  telegramVinculacionId = "";
   sesionActual = null;
   actualizarEncabezadoSesion();
   mostrarAviso("Sesión cerrada.", "info");
@@ -1071,6 +1075,113 @@ function mostrarResultadoTelegram(tipo, mensaje) {
   salida.style.color = colores[tipo] || "";
 }
 
+function actualizarEtiquetaTelegram() {
+  const boton = obtenerElemento("btn-nav-telegram");
+
+  if (boton) {
+    boton.textContent = telegramVinculado ? "Telegram ✓" : "Telegram";
+  }
+}
+
+async function consultarEstadoTelegram() {
+  if (!sesionActual) return null;
+
+  try {
+    const respuesta = await solicitarJSON(API_TELEGRAM, {
+      method: "POST",
+      body: JSON.stringify({
+        accion: "estado",
+        usuario_id: sesionActual.usuario_id || "",
+        sesion_id: sesionActual.sesion_id || ""
+      })
+    });
+
+    telegramVinculado = respuesta?.vinculado === true;
+    telegramVinculacionId = respuesta?.vinculacion_id || "";
+    actualizarEtiquetaTelegram();
+
+    return respuesta;
+  } catch (error) {
+    console.error("No se pudo consultar el estado de Telegram:", error);
+    return null;
+  }
+}
+
+function detenerSondeoTelegram() {
+  if (temporizadorTelegram) {
+    clearInterval(temporizadorTelegram);
+    temporizadorTelegram = null;
+  }
+}
+
+function mostrarEstadoTelegramEnModal(respuesta) {
+  const boton = obtenerElemento("btn-generar-codigo-telegram");
+
+  if (respuesta?.vinculado) {
+    const usuario = respuesta.telegram_username
+      ? ` (${respuesta.telegram_username})`
+      : "";
+
+    mostrarResultadoTelegram(
+      "success",
+      `Tu Telegram ya está vinculado${usuario}. Recibirás tus avisos por ahí.`
+    );
+
+    if (boton) boton.textContent = "Vincular otra cuenta de Telegram";
+  } else {
+    mostrarResultadoTelegram(
+      "info",
+      "Todavía no tienes Telegram vinculado."
+    );
+
+    if (boton) boton.textContent = "Generar código";
+  }
+}
+
+async function abrirTelegram() {
+  detenerSondeoTelegram();
+  mostrarResultadoTelegram("info", "Consultando tu vinculación...");
+  abrirModalPorId("telegram-modal");
+
+  const respuesta = await consultarEstadoTelegram();
+
+  if (respuesta) {
+    mostrarEstadoTelegramEnModal(respuesta);
+  } else {
+    mostrarResultadoTelegram(
+      "error",
+      "No fue posible consultar el estado de Telegram."
+    );
+  }
+}
+
+function iniciarSondeoTelegram(vinculacionPrevia) {
+  detenerSondeoTelegram();
+
+  let intentos = 0;
+
+  temporizadorTelegram = setInterval(async () => {
+    intentos += 1;
+
+    const respuesta = await consultarEstadoTelegram();
+
+    if (
+      respuesta?.vinculado &&
+      respuesta.vinculacion_id &&
+      respuesta.vinculacion_id !== vinculacionPrevia
+    ) {
+      detenerSondeoTelegram();
+      mostrarEstadoTelegramEnModal(respuesta);
+      mostrarAviso("Telegram vinculado correctamente.", "success");
+      return;
+    }
+
+    if (intentos >= 100 || !sesionActual) {
+      detenerSondeoTelegram();
+    }
+  }, 6000);
+}
+
 function configurarTelegram() {
   const boton = obtenerElemento("btn-generar-codigo-telegram");
 
@@ -1084,6 +1195,8 @@ function configurarTelegram() {
       );
       return;
     }
+
+    const vinculacionPrevia = telegramVinculacionId;
 
     try {
       boton.disabled = true;
@@ -1106,8 +1219,11 @@ function configurarTelegram() {
       mostrarResultadoTelegram(
         "success",
         `Tu código es ${respuesta.codigo}. Abre el bot en Telegram y ` +
-        `escribe: /vincular ${respuesta.codigo} (vence en 10 minutos).`
+        `escribe: /vincular ${respuesta.codigo} (vence en 10 minutos). ` +
+        "Esta ventana se actualizará cuando quede vinculado."
       );
+
+      iniciarSondeoTelegram(vinculacionPrevia);
     } catch (error) {
       console.error("Error al generar el código de Telegram:", error);
 

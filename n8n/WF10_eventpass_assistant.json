@@ -3,7 +3,11 @@
   "nodes": [
     {
       "parameters": {
-        "options": {}
+        "public": true,
+        "mode": "webhook",
+        "options": {
+          "allowedOrigins": "https://eventpass-frontend-theta.vercel.app"
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.5,
@@ -114,8 +118,8 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "conversation_id": "={{ $('When chat message received').item.json.sessionId }}",
-            "visitor_id": "={{ $('When chat message received').item.json.sessionId }}",
+            "conversation_id": "={{ $('When chat message received').first().json.sessionId }}",
+            "visitor_id": "={{ $('When chat message received').first().json.sessionId }}",
             "fecha_inicio": "={{ new Date().toISOString() }}",
             "fecha_ultima_interaccion": "={{ new Date().toISOString() }}",
             "estado": "ABIERTA"
@@ -185,8 +189,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        720,
-        160
+        560,
+        0
       ],
       "id": "39c50f54-6a2b-457e-94c5-c8fd98c74051",
       "name": "EP10 - Guardar conversación",
@@ -195,7 +199,8 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -218,10 +223,10 @@
           "mappingMode": "defineBelow",
           "value": {
             "message_id": "={{ 'MSG-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8) }}",
-            "conversation_id": "={{ $('When chat message received').item.json.sessionId }}",
-            "visitor_id": "={{ $('When chat message received').item.json.sessionId }}",
+            "conversation_id": "={{ $('When chat message received').first().json.sessionId }}",
+            "visitor_id": "={{ $('When chat message received').first().json.sessionId }}",
             "rol": "USER",
-            "mensaje": "={{ $('When chat message received').item.json.chatInput }}",
+            "mensaje": "={{ $('When chat message received').first().json.chatInput }}",
             "timestamp": "={{ new Date().toISOString() }}"
           },
           "matchingColumns": [],
@@ -298,8 +303,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        704,
-        -32
+        780,
+        0
       ],
       "id": "fdadab7b-dab9-4e09-9732-b394b513cf88",
       "name": "EP10 - Guardar mensaje usuario",
@@ -308,7 +313,8 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -331,11 +337,11 @@
           "mappingMode": "defineBelow",
           "value": {
             "message_id": "={{ 'MSG-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8) }}",
-            "conversation_id": "={{ $('When chat message received').item.json.sessionId }}",
-            "visitor_id": "={{ $('When chat message received').item.json.sessionId }}",
+            "conversation_id": "={{ $('When chat message received').first().json.sessionId }}",
+            "visitor_id": "={{ $('When chat message received').first().json.sessionId }}",
             "rol": "ASSISTANT",
             "timestamp": "={{ new Date().toISOString() }}",
-            "mensaje": "={{ $('WF10 - Agente IA').item.json.output }}"
+            "mensaje": "={{ $('WF10 - Agente IA').first().json.output }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -411,8 +417,8 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        688,
-        -192
+        1000,
+        0
       ],
       "id": "e20c0372-1aca-4756-9a3a-010f41f6d5dc",
       "name": "EP10 - Guardar mensaje asistente",
@@ -421,7 +427,21 @@
           "id": "F4XBiwGF1TKJqTHr",
           "name": "Google Sheets account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El chat muestra el campo 'output' del último nodo ejecutado.\nreturn [{ json: { output: $('WF10 - Agente IA').first().json.output } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1220,
+        0
+      ],
+      "id": "f1000000-0000-4000-8000-000000000001",
+      "name": "WF10 - Respuesta del chat"
     }
   ],
   "pinData": {},
@@ -474,16 +494,6 @@
       "main": [
         [
           {
-            "node": "EP10 - Guardar mensaje asistente",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "EP10 - Guardar mensaje usuario",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "EP10 - Guardar conversación",
             "type": "main",
             "index": 0
@@ -493,12 +503,35 @@
     },
     "EP10 - Guardar mensaje usuario": {
       "main": [
-        []
+        [
+          {
+            "node": "EP10 - Guardar mensaje asistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "EP10 - Guardar mensaje asistente": {
       "main": [
-        []
+        [
+          {
+            "node": "WF10 - Respuesta del chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EP10 - Guardar conversación": {
+      "main": [
+        [
+          {
+            "node": "EP10 - Guardar mensaje usuario",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },

@@ -14,7 +14,28 @@
 
   <link rel="stylesheet" href="./css/styles.css">
 
-  <script src="./js/app.js?v=9" defer></script>
+  <!-- Estilos del asistente (widget de n8n) con los colores de EventPass -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css"
+  >
+  <style>
+    :root {
+      --chat--color-primary: #d9ad61;
+      --chat--color-primary-shade-50: #c79a52;
+      --chat--color-primary-shade-100: #b88a45;
+      --chat--color-secondary: #8c6631;
+      --chat--toggle--background: #d9ad61;
+      --chat--toggle--hover--background: #f5d58c;
+      --chat--toggle--active--background: #c79a52;
+      --chat--toggle--color: #17121c;
+      --chat--header--background: #17121c;
+      --chat--header--color: #f5d58c;
+    }
+  </style>
+
+  <script src="./js/app.js?v=10" defer></script>
+  <script type="module" src="./js/chat.js"></script>
 </head>
 
 <body>

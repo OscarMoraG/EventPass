@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || {};\nconst usuario_id = String(body.usuario_id || '').trim();\nconst sesion_id = String(body.sesion_id || '').trim();\n\nif (!usuario_id || !sesion_id) {\n  return [{ json: { valido: false, mensaje: 'Debes iniciar sesión para vincular Telegram.' } }];\n}\n\nreturn [{ json: { valido: true, usuario_id, sesion_id } }];"
+        "jsCode": "const body = $input.first().json.body || {};\nconst usuario_id = String(body.usuario_id || '').trim();\nconst sesion_id = String(body.sesion_id || '').trim();\nconst accion = String(body.accion || 'codigo').trim().toLowerCase();\n\nif (!usuario_id || !sesion_id) {\n  return [{ json: { valido: false, mensaje: 'Debes iniciar sesión para vincular Telegram.' } }];\n}\n\nreturn [{ json: { valido: true, accion, usuario_id, sesion_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -730,6 +730,110 @@
       ],
       "id": "f3000000-0000-4000-8000-000000000022",
       "name": "WF03 - Responder por Telegram"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f3000000-0000-4000-8000-000000000101",
+              "leftValue": "={{ $('WF03 - Validar solicitud').first().json.accion === 'estado' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        -300
+      ],
+      "id": "f3000000-0000-4000-8000-000000000102",
+      "name": "WF03 - ¿Solo consultar estado?"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI",
+          "mode": "list",
+          "cachedResultName": "EP03_Telegram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1s5hprCEY_WBaJE08KMCEbrao9jT5AB7aHm6pus5C3ZI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Vinculaciones",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "usuario_id",
+              "lookupValue": "={{ $('WF03 - Validar solicitud').first().json.usuario_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        220,
+        -300
+      ],
+      "id": "f3000000-0000-4000-8000-000000000103",
+      "name": "WF03 - Consultar vinculación del usuario",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "F4XBiwGF1TKJqTHr",
+          "name": "Google Sheets account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const activa = $input.all()\n  .map(i => i.json)\n  .filter(v => v.chat_id && String(v.estado || '').toUpperCase() === 'ACTIVA')\n  .sort((a, b) => new Date(b.fecha_vinculacion || 0) - new Date(a.fecha_vinculacion || 0))[0];\n\nreturn [{\n  json: {\n    ok: true,\n    vinculado: !!activa,\n    vinculacion_id: activa ? activa.vinculacion_id : '',\n    telegram_username: activa ? (activa.telegram_username || '') : '',\n    fecha_vinculacion: activa ? activa.fecha_vinculacion : ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        -300
+      ],
+      "id": "f3000000-0000-4000-8000-000000000104",
+      "name": "WF03 - Resolver estado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        660,
+        -300
+      ],
+      "id": "f3000000-0000-4000-8000-000000000105",
+      "name": "WF03 - Responder estado"
     }
   ],
   "pinData": {},
@@ -789,7 +893,7 @@
       "main": [
         [
           {
-            "node": "WF03 - Generar código",
+            "node": "WF03 - ¿Solo consultar estado?",
             "type": "main",
             "index": 0
           }
@@ -943,6 +1047,46 @@
         [
           {
             "node": "WF03 - Responder por Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - ¿Solo consultar estado?": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Consultar vinculación del usuario",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WF03 - Generar código",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Consultar vinculación del usuario": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Resolver estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF03 - Resolver estado": {
+      "main": [
+        [
+          {
+            "node": "WF03 - Responder estado",
             "type": "main",
             "index": 0
           }
